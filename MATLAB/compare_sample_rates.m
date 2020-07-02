@@ -14,32 +14,32 @@ data = [
     icdeltadot;
 ];
 
-getsounds = memoize(@generatesounds); % slow
+get_sounds = memoize(@generate_sounds); % slow
 
 % Source data for comparison purposes
 k = 1/(2*pi) * sqrt(3*1.4*101325/1000);
 source_data = [ k ./ radii; times ];
 
-% Sample rates
-rates = [22050,44100,88200];
+
+% Get data
+max_sample_rate = 88200;
+[y88k,~] = get_sounds(data, max_sample_rate);
 
 % Analyse and plot
-for i = 1:3
-    fs = rates(i);
+for i = 0:2
+    fs = max_sample_rate / (2^i); 
     
-    [y,~] = getsounds(data, fs);
-
-    [s,f] = cwt(y,fs);
+    % Downsample
+    y = y88k(1:(2^i):end);
     t = (0:numel(y)-1)/fs;
 
-
+    % Analyse
+    [s,f] = cwt(y,fs);
     peaks = find_peaks(s,f,t,0.2);
 
-    plot_scaleogram(s,f,t,sprintf('Sythesised by me, wavelet, %dHz',fs));
-
+    % Plot
+    plot_scaleogram(s,f,t,[0 1500],[0 9],sprintf('Sythesised by me, wavelet, %dHz',fs));
     plot_peaks(peaks,'r');
     plot_peaks(source_data','g');
 
 end
-
-

@@ -1,6 +1,6 @@
 % https://au.mathworks.com/matlabcentral/answers/66301-solve-a-second-order-differential-equation
 
-function [t,d] = makesound(R_0, ddot_0, tspan)
+function [t,d] = make_sound(R_0, ddot_0, tspan)
 
 % Constants
 K_p = 1.4; % 1.4

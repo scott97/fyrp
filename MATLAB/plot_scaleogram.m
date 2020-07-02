@@ -1,5 +1,5 @@
 % Finds peaks from a spectrogram/scalogram
-function [row,col]=plot_scaleogram(s,f,t,name)
+function [row,col]=plot_scaleogram(s,f,t, xlim, ylim,name)
     % Remove phase info
     s = abs(s);
 
@@ -9,7 +9,8 @@ function [row,col]=plot_scaleogram(s,f,t,name)
     xlabel('Time (ms)')
     ylabel('Frequency (kHz)')
     colorbar
-    axis tight
+    axis([xlim ylim])
+    % axis tight
 
     % Scalogram
     surface(t*1000,f/1000,s)
