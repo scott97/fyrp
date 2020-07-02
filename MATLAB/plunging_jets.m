@@ -4,13 +4,11 @@
 t = (0:numel(y)-1)/fs;
 
 % Analyse
+y = bandpass(y,[500 9000],fs);
 [s,f] = cwt(y,fs);
-peaks = find_peaks(s,f,t,0.2);
+peaks = find_peaks(s,f,t,0.02);
 
 % Plot
-plot_scaleogram(s,f,t,[0 1500],[0 9],sprintf('Sythesised by me, wavelet, %dHz',fs));
+plot_scaleogram(s,f,t,[0 1500],[0 9],sprintf('Plunging jets, wavelet, %dHz',fs));
 plot_peaks(peaks,'r');
-    
-
-% Not working - fix the inconsistent peaks matrix
 

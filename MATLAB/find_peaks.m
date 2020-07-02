@@ -1,5 +1,6 @@
 % Finds peaks from a spectrogram/scalogram
 function data=find_peaks(s,f,t,thresh)
+
 % Remove phase info
 s = abs(s);
 
@@ -13,11 +14,7 @@ BW = peaks .* clean;
 col = t(col)*1000;
 row = f(row)/1000;
 
-data = [row,col'];
-
+data = [row';col];
 
 end
-
-
-
 
