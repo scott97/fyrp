@@ -11,18 +11,16 @@ dd_ic = data(3,:);
 
 % Make sounds
 t = 0:(1/fs):1.5;
-y = zeros(length(t),1);
+y = zeros(1,length(t));
 
 
 for i = 1:length(t_val)
-    [~,d] = make_sound(R_0(i), dd_ic(i),0:(1/fs):1.5);
-    idx = floor(t_val(i)*fs); % times or divide?
-    shifted = circshift(d,idx,1);
-    y = y + shifted(1:length(y));
+    d = make_sound(R_0(i), dd_ic(i), t_val(i), t);
+    y = y + d;
 end
 
-% Add some background noise
-noise = randn([length(y),1]) * noise_amount;
+% Add some signal noise
+noise = randn([1,length(y)]) * noise_amount;
 y = y + noise;
 
 % Amplify

@@ -1,5 +1,5 @@
 % Solving 2ODE's is slow so this just uses an algebraic expression.
-function [t,d] = make_sound(R_0, ddot_0, t)
+function d = make_sound(R_0, ddot_0, T, t)
 
     % Constants
     K_p = 1.4; % 1.4
@@ -19,9 +19,12 @@ function [t,d] = make_sound(R_0, ddot_0, t)
 
 
     % Evaluate
-    d = M * exp(-k .* t) .* sin(w .* t);
-    d = d';
-    t = t';
+    d = M * exp(-k .* (t-T)) .* sin(w .* (t-T)) .* ((t-T) > 0);
+
+    % Temporary fix **** this is bad
+    if ~all(isfinite(d))
+        d = zeros(size(t));
+    end
 
 end
 
