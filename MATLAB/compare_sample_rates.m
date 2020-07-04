@@ -23,7 +23,6 @@ comparison_data = [ k ./ radii; timestamps ];
 max_sample_rate = 88200;
 [y88k,~] = cached_generate_sounds(source_data, max_sample_rate);
 
-
 % Analyse and plot
 for i = 0:2
     fs = max_sample_rate / (2^i); 

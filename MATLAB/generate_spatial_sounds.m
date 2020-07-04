@@ -1,10 +1,8 @@
-% TODO - finish this
-
-function [y1,y2,y3,t] = generate_spatial_sounds(data,fs, loc1, loc2, loc3)
+function [y1,y2,y3,t] = generate_spatial_sounds(data, fs, loc1, loc2, loc3)
 
 % Constants
 noise_amount = 0.00005;
-c = 1500*1000; % Speed of sound underwater (mm/s) (see wikipedia -en.wikipedia.org/wiki/Speed_of_sound#Seawater)
+c = 1500*1000; % Speed of sound seawater (mm/s)
 
 % Data
 R_0 = data(1,:) ./ 1000; % Convert from mm to m
