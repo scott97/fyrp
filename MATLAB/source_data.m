@@ -20,9 +20,10 @@ function [radii, timestamps, icdd, xpos, ypos] = source_data(n,duration)
 
     % Bubble positions (mm)
     % Bubbles are placed equally on the surface of the water (2D plane)
-    % Some bubbles outside the measurement area shall be ignored
-    min = -1000;
-    max = +1000;
+    % Bubbles generated in a 20m area
+    % Bubbles outside the measurement area shall be ignored
+    min = -10e3; 
+    max = +10e3;
     xpos = min + (max-min).*rand(1,n);
     ypos = min + (max-min).*rand(1,n);
 

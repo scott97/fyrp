@@ -1,6 +1,3 @@
-% TODO - finish this
-% beamforming stuff
-
 % Memoized funcs
 % These are nolonger super slow but they are still worth cacheing
 cached_source_data = memoize(@source_data);
@@ -8,8 +5,10 @@ cached_generate_spatial_sounds = memoize(@generate_spatial_sounds);
 
 
 % Get source data
-[radii, timestamps, icdd, xpos, ypos] = cached_source_data(300,1500);
-plot_spatial_data(radii, timestamps, icdd, xpos, ypos);
+[radii, timestamps, icdd, xpos, ypos] = cached_source_data(1000,1500);
+zone = sqrt(xpos.^2 + ypos.^2) < 1000; % I only want to measure bubbles in a 1m radius of the surface
+
+plot_spatial_data(radii, timestamps, icdd, xpos, ypos, zone);
 
 source_data = [
 	radii;
@@ -17,12 +16,13 @@ source_data = [
     icdd;
     xpos;
     ypos;
+    zone;
 ];
 
 
 % Data for comparison purposes
 k = 1/(2*pi) * sqrt(3*1.4*101325/1000);
-comparison_data = [ k ./ radii; timestamps ];
+comparison_data = [ k ./ radii(zone); timestamps(zone) ];
 
 % Hydrophone array layout
 % Side view
@@ -46,28 +46,11 @@ fs = 88200;
 [y1,y2,y3,t] = cached_generate_spatial_sounds(source_data, fs, loc1, loc2, loc3);
 
 % Analyse
-y1 = bandpass(y1,[500 9000],fs);
-[s,f] = cwt(y1,fs);
-peaks = find_peaks(s,f,t,0.2);
+y = source_separate(t,fs,y1,y2,y3,[0;0;0],loc1,loc2,loc3);
 
-% Plot
-plot_scaleogram(s,f,t,[0 1500],[0 9],sprintf('Sythesised by me, wavelet, %dHz',fs));
-plot_peaks(peaks,'r');
-plot_peaks(comparison_data,'g');
 
-% Analyse
-y2 = bandpass(y2,[500 9000],fs);
-[s,f] = cwt(y2,fs);
-peaks = find_peaks(s,f,t,0.2);
-
-% Plot
-plot_scaleogram(s,f,t,[0 1500],[0 9],sprintf('Sythesised by me, wavelet, %dHz',fs));
-plot_peaks(peaks,'r');
-plot_peaks(comparison_data,'g');
-
-% Analyse
-y3 = bandpass(y3,[500 9000],fs);
-[s,f] = cwt(y3,fs);
+y = bandpass(y,[500 9000],fs);
+[s,f] = cwt(y,fs);
 peaks = find_peaks(s,f,t,0.2);
 
 % Plot
