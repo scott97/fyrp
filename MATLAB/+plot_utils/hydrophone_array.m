@@ -1,4 +1,4 @@
-function plot_hydrophone_array(loc1,loc2,loc3)
+function hydrophone_array(loc1,loc2,loc3)
     figure;
     w = (-10:10) .* 100;
     [X,Y] = meshgrid(w,w);

@@ -1,5 +1,5 @@
 % Finds peaks from a spectrogram/scalogram
-function [row,col]=plot_scaleogram(s,f,t, xlim, ylim,name)
+function [row,col]=scaleogram(s,f,t, xlim, ylim,name)
     % Remove phase info
     s = abs(s);
 

@@ -1,4 +1,4 @@
-function plot_spatial_data(radii, timestamps, icdd, xpos, ypos, zone)
+function spatial_data(radii, timestamps, icdd, xpos, ypos, zone)
     figure
     scatter3(xpos(zone), ypos(zone), timestamps(zone), radii(zone) .* 25, icdd(zone),'o'); % .* 25 is to improve legibility
     axis tight

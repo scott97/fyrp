@@ -1,4 +1,4 @@
-function [y,t] = generate_sounds(data,fs)
+function [y,t] = basic(data,fs)
 
 % Constants
 noise_amount = 0.00005;
@@ -15,7 +15,7 @@ y = zeros(1,length(t));
 
 
 for i = 1:length(t_val)
-    d = make_sound(R_0(i), dd_ic(i), t_val(i), t);
+    d = generate_audio.make_sound(R_0(i), dd_ic(i), t_val(i), t);
     y = y + d;
 end
 

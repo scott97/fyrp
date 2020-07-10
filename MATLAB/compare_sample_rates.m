@@ -1,7 +1,7 @@
 % Memoized funcs
 % These are nolonger super slow but they are still worth cacheing
-cached_source_data = memoize(@source_data);
-cached_generate_sounds = memoize(@generate_sounds);
+cached_source_data = memoize(@misc_utils.source_data);
+cached_generate_sounds = memoize(@generate_audio.basic);
 
 
 % Get source data
@@ -34,11 +34,11 @@ for i = 0:2
     % Analyse
     y = bandpass(y,[500 9000],fs);
     [s,f] = cwt(y,fs);
-    peaks = find_peaks(s,f,t,0.2);
+    peaks = bubble_analysis.find_peaks(s,f,t,0.2);
 
     % Plot
-    plot_scaleogram(s,f,t,[0 1500],[0 9],sprintf('Sythesised by me, wavelet, %dHz',fs));
-    plot_peaks(peaks,'r');
-    plot_peaks(comparison_data,'g');
+    plot_utils.scaleogram(s,f,t,[0 1500],[0 9],sprintf('Sythesised by me, wavelet, %dHz',fs));
+    plot_utils.peaks(peaks,'r');
+    plot_utils.peaks(comparison_data,'g');
 
 end

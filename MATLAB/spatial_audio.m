@@ -1,14 +1,14 @@
 % Memoized funcs
 % These are nolonger super slow but they are still worth cacheing
-cached_source_data = memoize(@source_data);
-cached_generate_spatial_sounds = memoize(@generate_spatial_sounds);
+cached_source_data = memoize(@misc_utils.source_data);
+cached_generate_spatial_sounds = memoize(@generate_audio.three_hydrophone);
 
 
 % Get source data
 [radii, timestamps, icdd, xpos, ypos] = cached_source_data(1000,1500);
 zone = sqrt(xpos.^2 + ypos.^2) < 1000; % I only want to measure bubbles in a 1m radius of the surface
 
-plot_spatial_data(radii, timestamps, icdd, xpos, ypos, zone);
+plot_utils.spatial_data(radii, timestamps, icdd, xpos, ypos, zone);
 
 source_data = [
 	radii;
@@ -39,21 +39,21 @@ d = 150; % distance from centre (mm)
 loc1 = [d*cos(0);d*sin(0);z];
 loc2 = [d*cos(2*pi/3);d*sin(2*pi/3);z];
 loc3 = [d*cos(4*pi/3);d*sin(4*pi/3);z];
-plot_hydrophone_array(loc1,loc2,loc3);
+plot_utils.hydrophone_array(loc1,loc2,loc3);
 
 % Get data
 fs = 88200;
 [y1,y2,y3,t] = cached_generate_spatial_sounds(source_data, fs, loc1, loc2, loc3);
 
 % Analyse
-y = source_separate(t,fs,y1,y2,y3,[0;0;0],loc1,loc2,loc3);
+y = bubble_analysis.source_separate(t,fs,y1,y2,y3,[0;0;0],loc1,loc2,loc3);
 
 
 y = bandpass(y,[500 9000],fs);
 [s,f] = cwt(y,fs);
-peaks = find_peaks(s,f,t,0.2);
+peaks = bubble_analysis.find_peaks(s,f,t,0.2);
 
 % Plot
-plot_scaleogram(s,f,t,[0 1500],[0 9],sprintf('Sythesised by me, wavelet, %dHz',fs));
-plot_peaks(peaks,'r');
-plot_peaks(comparison_data,'g');
+plot_utils.scaleogram(s,f,t,[0 1500],[0 9],sprintf('Sythesised by me, wavelet, %dHz',fs));
+plot_utils.peaks(peaks,'r');
+plot_utils.peaks(comparison_data,'g');
