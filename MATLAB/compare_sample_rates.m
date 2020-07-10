@@ -34,7 +34,7 @@ for i = 0:2
     % Analyse
     y = bandpass(y,[500 9000],fs);
     [s,f] = cwt(y,fs);
-    peaks = bubble_analysis.find_peaks(s,f,t,0.2);
+    peaks = bubble_analysis.find_peaks(s,f,t,0.09);
 
     % Plot
     plot_utils.scaleogram(s,f,t,[0 1500],[0 9],sprintf('Sythesised by me, wavelet, %dHz',fs));

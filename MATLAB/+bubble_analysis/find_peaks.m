@@ -4,6 +4,9 @@ function data=find_peaks(s,f,t,thresh)
 % Remove phase info
 s = abs(s);
 
+% Scale threshold based on maximum value
+thresh = thresh * max(s,[], 'all');
+
 % Find peaks
 peaks = imregionalmax(s);
 clean = s>thresh; % threshold constant needs to be tuned
