@@ -3,18 +3,39 @@
 % Plunging Jets
 [y,fs] = audioread('../../DATA/PlungingJets/CircularPlungingJet_x9613135_1.wav', [0.0,1.5]*22050+1);
 
-% Define wavelet
-morlet = @(t) exp(-((2*pi/5) .* t) .^ 2 ./2) .* cos((2*pi).*t);
 
-% Show wavelet
+% Constants
+tau = 2*pi
+
+% Define wavelets
+morlet = @(t) exp(-(tau/5 .* t) .^ 2 ./2) .* cos(tau .* t);
+zeta = 0.1;
+k = 1-zeta^2;
+soulti = @(t) 1/k .* exp(-zeta/k * tau .* t) .* sin(tau .* t) .* (t>0);
+
+% Show wavelets
+figure
 t = -3:.01:3;
 plot(t,morlet(t))
 
-% CWT
-[s,f] = fwt(y, morlet, [-3 3], 1000:50:9000, 22050);
-[s2,f2] = cwt(y,fs);
+figure
+t = 0:.01:10;
+plot(t,soulti(t))
 
-% Plot
+% Plot CWT
 t = (0:numel(y)-1)/fs;
-plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt');
-plot_utils.scaleogram(s2,f2,t,[0 1500],[1 9],'matlab cwt');
+
+% Morlet
+[s,f] = fwt(y, morlet, [-3 3], 1000:50:9000, 22050);
+plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (morlet)');
+
+% SOULTI
+[s,f] = fwt(y, soulti, [0 10], 1000:50:9000, 22050);
+plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (SOULTI)');
+
+% MATLAB built-in
+[s,f] = cwt(y,fs);
+plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'matlab cwt');
+
+
+
