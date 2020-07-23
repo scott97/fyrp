@@ -26,11 +26,11 @@ plot(t,soulti(t))
 t = (0:numel(y)-1)/fs;
 
 % Morlet
-[s,f] = fwt(y, morlet, [-3 3], 1000:50:9000, 22050);
+[s,f] = bubble_analysis.cwt(y, morlet, [-3 3], 1000:50:9000, 22050);
 plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (morlet)');
 
 % SOULTI
-[s,f] = fwt(y, soulti, [0 10], 1000:50:9000, 22050);
+[s,f] = bubble_analysis.cwt(y, soulti, [0 10], 1000:50:9000, 22050);
 plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (SOULTI)');
 
 % MATLAB built-in

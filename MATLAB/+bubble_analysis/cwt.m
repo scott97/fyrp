@@ -1,4 +1,4 @@
-function [s,f] = fwt(y,wvlt_fn,wvlt_bounds,f,fs)
+function [s,f] = cwt(y,wvlt_fn,wvlt_bounds,f,fs)
     % y - signal
     % wvlt_fn - wavelet function of form @(t), must have a frequency of 1Hz!
     % wvlt_bounds - an array [min,max], where the wavelet function is equal to zero below min and above max
