@@ -2,12 +2,9 @@ use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use rustfft::FFTplanner;
 
-use faster::*;
 use itertools::Itertools;
 use packed_simd::*;
 use rayon::prelude::*;
-
-
 
 use super::iter::rangef;
 
@@ -62,15 +59,13 @@ pub fn cwt_par(
             let k = 1.0 / scale.sqrt();
             let wv: Vec<f32> = t.map(|t| k * wvlt_fn(t / scale)).rev().collect();
 
-            conv_simd2(&y, &wv)[wv.len()..].to_vec()
+            conv_simd(&y, &wv)[wv.len()..].to_vec()
         })
         .collect()
 }
 
 // do convolution the normal way
 fn conv(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
-    //dbg!("conv");
-
     let n = x.len() + h.len() - 1;
     let mut y: Vec<f32> = vec![0.0; n];
 
@@ -85,123 +80,14 @@ fn conv(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
     y
 }
 
-// do convolution using SIMD - note this lib is complicated, lets not use it
+// Very nearly works except for the last few elements which are sometimes left as zeros
 fn conv_simd(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
-    // dbg!("conv_simd");
+    // TODO: refactor so that indexing is less confusing
 
     let lx = x.len();
     let lh = h.len();
     let lxh = lx + lh - 1;
-
-    let mut x = x.to_vec(); // doing the copying probably is slowing it down
-    x.extend(vec![0.0f32; lh - 1].into_iter());
-    let mut y = vec![0.0; lxh];
-
-    #[cfg(not(any(
-        target_feature = "avx2",
-        target_feature = "avx",
-        target_feature = "sse",
-        target_feature = "avx512"
-    )))]
-    {
-        dbg!("SIMD not supported?");
-    }
-
-    // doesn't crash, but does it work and is it faster?
-    // also i think this might be the wrong length
-    for m in 0..lh {
-        y = (
-            (&y[0..lx]).simd_iter(f32s(0.0)),
-            (&x[m..(m + lx)]).simd_iter(f32s(0.0)),
-        )
-            .zip()
-            .simd_map(|(y_p, x_s)| y_p + x_s * f32s(h[m]))
-            .scalar_collect();
-    }
-
-    y
-}
-
-// do convolution using SIMD (alternative library)
-// fn conv_simd2(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
-//     // dbg!("conv_simd");
-
-//     let lx = x.len();
-//     let lxch = lx - (lx % 16); // Length of x rounded down to nearest 16.
-//     let lh = h.len();
-//     let lxh = lx + lh - 1;
-
-//     let mut y = vec![0.0; lxh]; // It might be worth trying extending to the next 16, and padding with zeros
-
-//     for m in 0..lh {
-//         // TODO - handle left and right zeros
-//         // TODO - shift x
-
-//         dbg!(h[m]);
-
-//         // Process chunks
-//         dbg!("process chunks");
-//         for ch in (0..lxch).step_by(16) {
-//             let x_chunk = f32x16::from_slice_unaligned(&x[ch..]);
-//             let y_chunk = f32x16::from_slice_unaligned(&y[ch..]);
-//             let result = y_chunk + x_chunk * f32x16::splat(h[m]);
-//             result.write_to_slice_unaligned(&mut y[ch..]);
-//         }
-//         // Remaining elements
-//         dbg!("single elements");
-//         for i in (lxch..lx) {
-//             y[i] += x[i] * h[m];
-//         }
-//         dbg!(&y);
-//     }
-
-//     y
-// }
-
-// /// works on chunks, pads to get up to a chunk size
-// /// issue: shifts x in wrong direction
-// fn conv_simd2(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
-//     dbg!("conv_simd");
-
-//     let lx = x.len();
-//     let lh = h.len();
-//     let lxh = lx + lh - 1;
-//     let lxch = lx - (lx % 16) + 16; 
-//     let lxhch = lxch + lh;
-
-//     let mut y = vec![0.0; lxhch];
-//     let mut xm = x.to_vec();
-//     xm.resize(lxhch, 0.);
-    
-//     dbg!(&xm); // initial values of extended x
-
-//     for m in 0..lh {
-//         // TODO - fix bugs
-//         dbg!(h[m]);
-//         for ch in (0..lxch).step_by(16) {
-//             dbg!(&ch);
-//             let x_chunk = f32x16::from_slice_unaligned(&xm[(ch+m)..(ch+m+16)]); // Issue, shifts wrong direction. This isn't as simple as changing the sign, I also need to consider the edge of the backing array.
-//             let y_chunk = f32x16::from_slice_unaligned(&y[(ch)..(ch+16)]);
-//             let result = y_chunk + x_chunk * f32x16::splat(h[m]);
-//             result.write_to_slice_unaligned(&mut y[ch..]);
-//         }
-//         dbg!(&y);
-//     }
-
-//     //y[0..lxh].to_vec()
-//     y.truncate(lxh);
-//     y
-// }
-
-
-/// correct implementation
-fn conv_simd2(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
-    dbg!("conv_simd");
-
-    let lx = x.len();
-    let lh = h.len();
-    let lxh = lx + lh - 1;
-    let lxch = lx - (lx % 16) + 16; 
+    let lxch = lx - (lx % 16) + 16;
     let lxhch = lxch + lh;
 
     let mut y = vec![0.0; lxhch];
@@ -209,30 +95,26 @@ fn conv_simd2(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
     let mut xm = vec![0.; lh];
     xm.extend(x.iter()); // pad left w/ zeros so shifts of x don't read outside array.
     xm.resize(lxhch, 0.); // pad right w/ zeros to chunk size.
-    
-    dbg!(&xm); // initial values of extended x
+    // dbg!(&xm); // initial values of extended x
 
     for m in 0..lh {
-        dbg!(h[m]);
+        // dbg!(h[m]);
         for ch in (0..lxch).step_by(16) {
-            dbg!(&ch);
-            let x_chunk = f32x16::from_slice_unaligned(&xm[(ch+lh-m)..(ch+lh-m+16)]);
-            let y_chunk = f32x16::from_slice_unaligned(&y[(ch)..(ch+16)]);
+            // dbg!(&ch);
+            let x_chunk = f32x16::from_slice_unaligned(&xm[(ch + lh - m)..(ch + lh - m + 16)]);
+            let y_chunk = f32x16::from_slice_unaligned(&y[(ch)..(ch + 16)]);
             let result = y_chunk + x_chunk * f32x16::splat(h[m]);
             result.write_to_slice_unaligned(&mut y[ch..]);
         }
-        dbg!(&y);
+        // dbg!(&y);
     }
 
-    //y[0..lxh].to_vec()
     y.truncate(lxh);
     y
 }
 
-
 // do convolution using FFT
 fn conv_fft(sig: &Vec<f32>, fir: &Vec<f32>) -> Vec<f32> {
-    //dbg!("conv_fft");
     let n = sig.len() + fir.len() - 1;
 
     // Time domain
@@ -274,23 +156,6 @@ fn conv_fft(sig: &Vec<f32>, fir: &Vec<f32>) -> Vec<f32> {
     result
 }
 
-// do convolution using parallelism !!!not correct
-// fn conv_par(sig: &Vec<f32>, fir: &Vec<f32>) -> Vec<f32> {
-//     let mut y: Vec<f32> = vec![0.0; fir.len() + sig.len() - 1];
-
-//     y.par_iter_mut().enumerate().for_each(|(ind, val)| {
-//         for i in 0..fir.len() {
-//             if ind + i >= sig.len() {
-//                 break;
-//             } else {
-//                 *val = *val + fir[i] * sig[ind + i];
-//             }
-//         }
-//     });
-
-//     y
-// }
-
 // Unit tests
 #[cfg(test)]
 mod tests {
@@ -314,23 +179,46 @@ mod tests {
         let actual = conv_fft(&x, &h);
         assert_eq!(expected.len(), actual.len());
         for i in 0..expected.len() {
-            assert_relative_eq!(expected[i],actual[i], max_relative = 0.00001);
+            assert_relative_eq!(expected[i], actual[i], max_relative = 0.00001);
         }
     }
 
     #[test]
-    fn test_conv_simd2() {
-        // longer vectors are needed to correctly test
-        let x = vec![
-            1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19.,
-            20.,
-        ];
+    fn test_conv_simd() {
+        let x: Vec<f32> = (1..20).map(|n| n as f32).collect();
         let h = vec![-3., 0., 3.];
         let expected = vec![
             -3., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6.,
-            -6., -6., -6., 57., 60.,
-        ]; // Using MATLAB result as expected result
+            -6., -6., 54., 57.,
+        ];
 
-        assert_eq!(conv_simd2(&x, &h), expected);
+        assert_eq!(conv_simd(&x, &h), expected);
+    }
+
+    #[test]
+    fn test_conv_simd_2() {
+        // a longer example
+        let x: Vec<f32> = (1..30).map(|n| n as f32).collect();
+        let h: Vec<f32> = (-4..8).map(|n| n as f32).collect();
+        let expected = vec![
+            -4., -11., -20., -30., -40., -49., -56., -60., -60., -55., -44., -26., -8., 10., 28.,
+            46., 64., 82., 100., 118., 136., 154., 172., 190., 208., 226., 244., 262., 280., 418.,
+            530., 615., 672., 700., 698., 665., 600., 502., 370., 203.,
+        ];
+
+        assert_eq!(conv_simd(&x, &h), expected);
+    }
+
+    #[test]
+    fn test_conv_simd_3() {
+        let x: Vec<f32> = (1..30).map(|n| n as f32).collect();
+        let h = vec![4., 4., 0., 0., 2., 2.];
+        let expected = vec![
+            4., 12., 20., 28., 38., 50., 62., 74., 86., 98., 110., 122., 134., 146., 158., 170.,
+            182., 194., 206., 218., 230., 242., 254., 266., 278., 290., 302., 314., 326., 218.,
+            106., 110., 114., 58.,
+        ];
+
+        assert_eq!(conv_simd(&x, &h), expected);
     }
 }
