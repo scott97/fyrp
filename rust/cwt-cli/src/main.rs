@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate exec_time;
 
+#[macro_use]
+extern crate approx;
+
 use std::fs::File;
 use std::path::Path;
 

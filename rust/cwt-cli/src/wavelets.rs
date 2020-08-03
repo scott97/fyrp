@@ -290,3 +290,47 @@ fn conv_fft(sig: &Vec<f32>, fir: &Vec<f32>) -> Vec<f32> {
 
 //     y
 // }
+
+// Unit tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_conv() {
+        let x = vec![1., 2., 3., 4., 5., 6., 7., 8., 9., 10.];
+        let h = vec![-3., 0., 3.];
+        let expected = vec![-3., -6., -6., -6., -6., -6., -6., -6., -6., -6., 27., 30.]; // Using MATLAB result as expected result
+
+        assert_eq!(conv(&x, &h), expected);
+    }
+
+    #[test]
+    fn test_conv_fft() {
+        let x = vec![1., 2., 3., 4., 5., 6., 7., 8., 9., 10.];
+        let h = vec![-3., 0., 3.];
+        let expected = vec![-3., -6., -6., -6., -6., -6., -6., -6., -6., -6., 27., 30.]; // Using MATLAB result as expected result
+
+        let actual = conv_fft(&x, &h);
+        assert_eq!(expected.len(), actual.len());
+        for i in 0..expected.len() {
+            assert_relative_eq!(expected[i],actual[i], max_relative = 0.00001);
+        }
+    }
+
+    #[test]
+    fn test_conv_simd2() {
+        // longer vectors are needed to correctly test
+        let x = vec![
+            1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19.,
+            20.,
+        ];
+        let h = vec![-3., 0., 3.];
+        let expected = vec![
+            -3., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6., -6.,
+            -6., -6., -6., 57., 60.,
+        ]; // Using MATLAB result as expected result
+
+        assert_eq!(conv_simd2(&x, &h), expected);
+    }
+}
