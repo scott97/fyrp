@@ -106,7 +106,9 @@ version = "0.1.0"
 dependencies = [
  "csv",
  "exec_time",
+ "faster",
  "itertools",
+ "packed_simd",
  "rayon",
  "rustfft",
  "wav",
@@ -163,6 +165,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "faster"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f760b1ee067c7a07902aba0969968f2b02b3f313e41df1830612f4e3447397d3"
+dependencies = [
+ "packed_simd",
+ "vektor",
 ]
 
 [[package]]
@@ -271,6 +283,15 @@ checksum = "05499f3756671c15885fee9034446956fff3f243d6077b91e5767df161f766b3"
 dependencies = [
  "hermit-abi",
  "libc",
+]
+
+[[package]]
+name = "packed_simd"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a85ea9fc0d4ac0deb6fe7911d38786b32fc11119afd9e9d38b84ff691ce64220"
+dependencies = [
+ "cfg-if",
 ]
 
 [[package]]
@@ -399,6 +420,15 @@ name = "unicode-xid"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"
+
+[[package]]
+name = "vektor"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42e86fbee9ad5d7dd720dbe6dd2e47c598d98632d707e18ed5186bd284e933da"
+dependencies = [
+ "packed_simd",
+]
 
 [[package]]
 name = "wav"
