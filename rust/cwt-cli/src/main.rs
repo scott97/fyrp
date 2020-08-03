@@ -9,6 +9,7 @@ use std::path::Path;
 
 mod iter;
 mod wavelets;
+mod conv;
 
 fn main() {
     let input_file = Path::new("data.wav");
@@ -50,8 +51,15 @@ fn main() {
             }
             wtr.flush().unwrap();
 
-            // Measure the other cwts
+            // Benchmark cwt variants
+            wavelets::cwt_par_simd(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
+            wavelets::cwt_par_fft(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
+            wavelets::cwt_par(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
+            
+            wavelets::cwt_simd(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
+            wavelets::cwt_fft(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
             wavelets::cwt(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
+            
 
         }
         _ => panic!("read error or wrong wave type"),
