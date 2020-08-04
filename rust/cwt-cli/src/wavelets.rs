@@ -149,3 +149,25 @@ pub fn cwt_par_fft(
         })
         .collect()
 }
+
+#[exec_time]
+pub fn cwt_par_simd_i16( // Unsure if it loses resolution from rounding, and unsure if it overflows. More testing needed.
+    y: &Vec<i16>,
+    wvlt_fn: fn(f32) -> i16,
+    wvlt_bounds: [f32; 2],
+    frequencies: &Vec<f32>,
+    fs: u32,
+) -> Vec<Vec<i16>> {
+    let step = 1.0 / (fs as f32);
+    frequencies
+        .par_iter()
+        .map(|f| {
+            let scale = 1.0 / f;
+            let t = rangef(wvlt_bounds[0] * scale, wvlt_bounds[1] * scale, step);
+            //let k = (scale.sqrt() * .256) as i16;
+            let wv: Vec<i16> = t.map(|t| wvlt_fn(t / scale) /*/ k*/).rev().collect();
+
+            conv::conv_simd_i16(&y, &wv)[wv.len()..].to_vec()
+        })
+        .collect()
+}

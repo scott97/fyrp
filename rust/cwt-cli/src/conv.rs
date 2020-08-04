@@ -33,7 +33,7 @@ pub fn conv_simd(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
     let mut xm = vec![0.; lh];
     xm.extend(x.iter()); // pad left w/ zeros so shifts of x don't read outside array.
     xm.resize(lxch + lh, 0.); // pad right w/ zeros to chunk size.
-    // dbg!(&xm);
+                              // dbg!(&xm);
 
     for m in 0..lh {
         // dbg!(h[m]);
@@ -43,6 +43,34 @@ pub fn conv_simd(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
             let y_chunk = f32x16::from_slice_unaligned(&y[(ch)..(ch + 16)]);
             let result = y_chunk + x_chunk * f32x16::splat(h[m]);
             result.write_to_slice_unaligned(&mut y[(ch)..(ch + 16)]);
+        }
+        // dbg!(&y);
+    }
+
+    y.truncate(lx + lh - 1);
+    y
+}
+
+pub fn conv_simd_i16(x: &Vec<i16>, h: &Vec<i16>) -> Vec<i16> {
+    let lx = x.len();
+    let lh = h.len();
+    let lxch = lx - (lx % 32) + 32; // Chunked length of x, (rounded up to nearest 32).
+
+    let mut y = vec![0i16; lxch + lh];
+
+    let mut xm = vec![0i16; lh];
+    xm.extend(x.iter()); // pad left w/ zeros so shifts of x don't read outside array.
+    xm.resize(lxch + lh, 0i16); // pad right w/ zeros to chunk size.
+                                // dbg!(&xm);
+
+    for m in 0..lh {
+        // dbg!(h[m]);
+        for ch in (0..lxch).step_by(32) {
+            // dbg!(&ch/16);
+            let x_chunk = i16x32::from_slice_unaligned(&xm[(ch + lh - m)..(ch + lh - m + 32)]);
+            let y_chunk = i16x32::from_slice_unaligned(&y[(ch)..(ch + 32)]);
+            let result = y_chunk + x_chunk * i16x32::splat(h[m]);
+            result.write_to_slice_unaligned(&mut y[(ch)..(ch + 32)]);
         }
         // dbg!(&y);
     }
@@ -145,5 +173,18 @@ mod tests {
         ];
 
         assert_eq!(conv_simd(&x, &h), expected);
+    }
+
+    #[test]
+    fn test_conv_simd_i16() {
+        let x: Vec<i16> = (1..30).map(|n| n as i16).collect();
+        let h = vec![4i16, 4i16, 0i16, 0i16, 2i16, 2i16];
+        let expected = vec![
+            4i16, 12i16, 20i16, 28i16, 38i16, 50i16, 62i16, 74i16, 86i16, 98i16, 110i16, 122i16,
+            134i16, 146i16, 158i16, 170i16, 182i16, 194i16, 206i16, 218i16, 230i16, 242i16, 254i16,
+            266i16, 278i16, 290i16, 302i16, 314i16, 326i16, 218i16, 106i16, 110i16, 114i16, 58i16,
+        ];
+
+        assert_eq!(conv_simd_i16(&x, &h), expected);
     }
 }
