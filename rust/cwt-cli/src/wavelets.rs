@@ -1,6 +1,6 @@
-use rayon::prelude::*;
-use super::iter::rangef;
 use super::conv;
+use super::iter::rangef;
+use rayon::prelude::*;
 
 // Wavelets
 pub fn soulti(t: f32, zeta: f32) -> f32 {

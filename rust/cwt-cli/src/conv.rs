@@ -1,9 +1,8 @@
+use itertools::Itertools;
+use packed_simd::*;
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use rustfft::FFTplanner;
-use itertools::Itertools;
-use packed_simd::*;
-
 
 // do convolution the normal way
 pub fn conv(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
@@ -23,7 +22,6 @@ pub fn conv(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
 
 // Very nearly works except for the last few elements which are sometimes left as zeros
 pub fn conv_simd(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
-
     let lx = x.len();
     let lh = h.len();
     let lxch = lx - (lx % 16) + 16; // Chunked length of x, (rounded up to nearest 16).
@@ -33,18 +31,14 @@ pub fn conv_simd(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
     let mut xm = vec![0.; lh];
     xm.extend(x.iter()); // pad left w/ zeros so shifts of x don't read outside array.
     xm.resize(lxch + lh, 0.); // pad right w/ zeros to chunk size.
-    // dbg!(&xm);
 
     for m in 0..lh {
-        // dbg!(h[m]);
         for ch in (0..lxch).step_by(16) {
-            // dbg!(&ch/16);
             let x_chunk = f32x16::from_slice_unaligned(&xm[(ch + lh - m)..(ch + lh - m + 16)]);
             let y_chunk = f32x16::from_slice_unaligned(&y[(ch)..(ch + 16)]);
             let result = y_chunk + x_chunk * f32x16::splat(h[m]);
             result.write_to_slice_unaligned(&mut y[(ch)..(ch + 16)]);
         }
-        // dbg!(&y);
     }
 
     y.truncate(lx + lh - 1);
@@ -103,7 +97,7 @@ mod tests {
     fn test_conv() {
         let x = vec![1., 2., 3., 4., 5., 6., 7., 8., 9., 10.];
         let h = vec![-3., 0., 3.];
-        let expected = vec![-3., -6., -6., -6., -6., -6., -6., -6., -6., -6., 27., 30.]; // Using MATLAB result as expected result
+        let expected = vec![-3., -6., -6., -6., -6., -6., -6., -6., -6., -6., 27., 30.];
 
         assert_eq!(conv(&x, &h), expected);
     }
@@ -112,7 +106,7 @@ mod tests {
     fn test_conv_fft() {
         let x = vec![1., 2., 3., 4., 5., 6., 7., 8., 9., 10.];
         let h = vec![-3., 0., 3.];
-        let expected = vec![-3., -6., -6., -6., -6., -6., -6., -6., -6., -6., 27., 30.]; // Using MATLAB result as expected result
+        let expected = vec![-3., -6., -6., -6., -6., -6., -6., -6., -6., -6., 27., 30.];
 
         let actual = conv_fft(&x, &h);
         assert_eq!(expected.len(), actual.len());

@@ -61,24 +61,18 @@ mod tests {
     #[test]
     fn test_forward() {
         let mut iter = rangef(0.0, 1.5, 0.5);
-        assert_eq!(Some(0.0),iter.next());
-        assert_eq!(Some(0.5),iter.next());
-        assert_eq!(Some(1.0),iter.next());
-        assert_eq!(Some(1.5),iter.next());
+        assert_eq!(Some(0.0), iter.next());
+        assert_eq!(Some(0.5), iter.next());
+        assert_eq!(Some(1.0), iter.next());
+        assert_eq!(Some(1.5), iter.next());
     }
 
     #[test]
     fn test_backward() {
         let mut iter = rangef(0.0, 1.5, 0.5);
-        assert_eq!(Some(1.5),iter.next_back());
-        assert_eq!(Some(1.0),iter.next_back());
-        assert_eq!(Some(0.5),iter.next_back());
-        assert_eq!(Some(0.0),iter.next_back());
+        assert_eq!(Some(1.5), iter.next_back());
+        assert_eq!(Some(1.0), iter.next_back());
+        assert_eq!(Some(0.5), iter.next_back());
+        assert_eq!(Some(0.0), iter.next_back());
     }
 }
-
-
-// Note:
-// similar to crate itertools_num::linspace
-// https://docs.rs/itertools-num/0.1.3/itertools_num/fn.linspace.html
-// but I think mine is better for what I need
