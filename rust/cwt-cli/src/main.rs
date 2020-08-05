@@ -7,6 +7,7 @@ extern crate approx;
 use std::fs::File;
 use std::path::Path;
 
+mod analysis;
 mod conv;
 mod iter;
 mod wavelets;
@@ -41,7 +42,8 @@ fn main() {
             let frequencies: Vec<f32> = iter::rangef(1000.0, 9000.0, 20.0).collect();
 
             // Do cwt
-            let s = wavelets::cwt_par_fft(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
+            let mut s = wavelets::cwt_par_fft(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
+            analysis::threshold(&mut s, 100.);
 
             // Write cwt data to a file
             let mut wtr = csv::Writer::from_path(output_file).unwrap();
