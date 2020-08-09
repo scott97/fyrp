@@ -37,34 +37,30 @@ fs = 44100;
 tau = 2*pi;
 
 % Define wavelets
-morlet = @(t) exp(-(tau/5 .* t) .^ 2 ./2) .* cos(tau .* t);
-
-winsin = @(t) exp(-(tau/15 .* t) .^ 2 ./2) .* cos(tau .* t);
-
-zeta = 0.1;
-k = 1-zeta^2;
-soulti1 = @(t) 1/k .* exp(-zeta/k * tau .* t) .* sin(tau .* t) .* (t>0);
+morlet_real = @(t) exp(-(tau/5 .* t) .^ 2 ./2) .* cos(tau .* t);
+morlet_cpx = @(t) exp(-(tau/5 .* t) .^ 2 ./2) .* exp(j*tau .* t);
 
 zeta = 0.02;
 k = 1-zeta^2;
-soulti2 = @(t) 1/k .* exp(-zeta/k * tau .* t) .* sin(tau .* t) .* (t>0);
+soulti_real = @(t) 1/k .* exp(-zeta/k * tau .* t) .* sin(tau .* t) .* (t>0);
+soulti_cpx = @(t) 1/k .* exp(-zeta/k * tau .* t) .* exp(j*tau .* t) .* (t>0);
 
 % Plot wavelets
 % figure
 % t = -3:.01:3;
-% plot(t,morlet(t))
+% plot(t,morlet_real(t))
 
 % figure
 % t = -9:.01:9;
-% plot(t,winsin(t))
+% plot(t,winsin_cpx(t))
 
 % figure
 % t = 0:.01:10;
-% plot(t,soulti1(t))
+% plot(t,soulti_real(t))
 
 % figure
 % t = 0:.01:50;
-% plot(t,soulti2(t))
+% plot(t,soulti_cpx(t))
 
 % Get data
 [y,t] = cached_one_hydrophone(source_data, fs, loc);
@@ -73,31 +69,33 @@ y = bandpass(y,[100 9000],fs);
 % Plot CWT
 t = (0:numel(y)-1)/fs;
 
-% Morlet
-[s,f] = bubble_analysis.cwt(y, morlet, [-3 3], 1000:50:9000, fs);
+% Morlet Real
+[s,f] = bubble_analysis.cwt(y, morlet_real, [-3 3], 1000:50:9000, fs);
 peaks = bubble_analysis.find_peaks(s,f,t,0.12);
-plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (morlet)');
+plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (Morlet Real)');
 plot_utils.peaks(peaks,'r');
 plot_utils.peaks(comparison_data,'g');
 
-% Morlet alt
-[s,f] = bubble_analysis.cwt(y, winsin, [-9 9], 1000:50:9000, fs);
+% Morlet Complex
+[s,f] = bubble_analysis.cwt(y, morlet_cpx, [-9 9], 1000:50:9000, fs);
+s=abs(s);
 peaks = bubble_analysis.find_peaks(s,f,t,0.12);
-plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (windowed sine)');
+plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (Morlet Complex)');
 plot_utils.peaks(peaks,'r');
 plot_utils.peaks(comparison_data,'g');
 
-% SOULTI1
-[s,f] = bubble_analysis.cwt(y, soulti1, [0 10], 1000:50:9000, fs);
+% Soulti Real
+[s,f] = bubble_analysis.cwt(y, soulti_real, [0 10], 1000:50:9000, fs);
 peaks = bubble_analysis.find_peaks(s,f,t,0.12);
-plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (SOULTI zeta=0.1)');
+plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (SOULTI Real zeta=0.02)');
 plot_utils.peaks(peaks,'r');
 plot_utils.peaks(comparison_data,'g');
 
-% SOULTI2
-[s,f] = bubble_analysis.cwt(y, soulti2, [0 50], 1000:50:9000, fs);
+% Soulti Complex
+[s,f] = bubble_analysis.cwt(y, soulti_cpx, [0 50], 1000:50:9000, fs);
+s=abs(s);
 peaks = bubble_analysis.find_peaks(s,f,t,0.12);
-plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (SOULTI zeta=0.02)');
+plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (SOULTI Complex zeta=0.02)');
 plot_utils.peaks(peaks,'r');
 plot_utils.peaks(comparison_data,'g');
 
