@@ -88,6 +88,46 @@ pub fn conv_fft(sig: &Vec<f32>, fir: &Vec<f32>) -> Vec<f32> {
     result
 }
 
+// Complex convolution
+pub fn conv_fft_cpx(sig: &Vec<f32>, fir: &Vec<Complex<f32>>) -> Vec<f32> {
+    let n = sig.len() + fir.len() - 1;
+
+    // Time domain
+    let mut tsig: Vec<Complex<f32>> = sig
+        .iter()
+        .pad_using(n, |_i| &0.0)
+        .map(|t| Complex::from(t))
+        .collect();
+    let mut tfir: Vec<Complex<f32>> = fir.to_vec();
+    tfir.resize(n, Complex::zero());
+
+    // Frequency domain
+    let mut fsig: Vec<Complex<f32>> = vec![Complex::zero(); n];
+    let mut ffir: Vec<Complex<f32>> = vec![Complex::zero(); n];
+
+    // Do FFT
+    let fft = FFTplanner::new(false).plan_fft(n);
+    fft.process(&mut tsig, &mut fsig);
+    fft.process(&mut tfir, &mut ffir);
+
+    // Elementwise multiplication
+    // Dividing each individually by sqrt(n) is the same as dividing both by n.
+    let mut fres: Vec<Complex<f32>> = vec![Complex::zero(); n];
+    let n_inv = 1. / (n as f32);
+    for i in 0..n {
+        fres[i] = fsig[i] * ffir[i] * n_inv;
+    }
+
+    // Do IFFT
+    let mut tres: Vec<Complex<f32>> = vec![Complex::zero(); n];
+    let fft = FFTplanner::new(true).plan_fft(n);
+    fft.process(&mut fres, &mut tres);
+
+    // Find absolute value
+    let result: Vec<f32> = tres.iter().map(|i| i.norm()).collect();
+    result
+}
+
 // Unit tests
 #[cfg(test)]
 mod tests {
