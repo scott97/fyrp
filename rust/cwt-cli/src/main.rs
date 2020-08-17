@@ -9,8 +9,11 @@ use std::path::Path;
 
 mod analysis;
 mod conv;
+mod cwt;
 mod iter;
-mod wavelets;
+
+use cwt::wavelets::soulti_cpx;
+use cwt::alg::Cwt;
 
 fn main() {
     let input_file = Path::new("data.wav");
@@ -31,20 +34,15 @@ fn main() {
             let y = raw_signal
                 .iter()
                 .map(|x| (*x as f32) / (i16::MAX as f32))
-                .take((1.000 * fs as f32) as usize)
+                .take((1.000* fs as f32) as usize)
                 .collect::<Vec<f32>>();
 
             // Frequencies (1 to 9 kHz at interval of 20Hz)
             let frequencies: Vec<f32> = iter::rangef(1000.0, 9000.0, 20.0).collect();
 
             // Do cwt
-            let mut s = wavelets::cwt_par_fft_cpx(
-                &y,
-                |t| wavelets::soulti_cpx(t, 0.02),
-                [0.0, 50.0],
-                &frequencies,
-                fs,
-            );
+            let mut cwt = cwt::alg::FftCpxFilterBank::new(1.000, |t| soulti_cpx(t, 0.02), [0.0, 50.0], &frequencies, fs);
+            let mut s = cwt.process_par(&y);
             analysis::threshold(&mut s, 100.);
 
             // Write cwt data to a file
@@ -56,12 +54,10 @@ fn main() {
             wtr.flush().unwrap();
 
             // Benchmark cwt variants
-            // wavelets::cwt_par_simd(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
-            // wavelets::cwt_par_fft(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
-            // wavelets::cwt_par(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
-            // wavelets::cwt_simd(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
-            // wavelets::cwt_fft(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
-            // wavelets::cwt(&y, wvlt_fn, wvlt_bounds, &frequencies, fs);
+            let mut cwt = cwt::alg::FftCpx::new(|t| soulti_cpx(t, 0.02), [0.0, 50.0], &frequencies, fs);
+            let mut s = cwt.process_par(&y);
+            let mut cwt = cwt::alg::FftCpxFilterBank::new(1.000, |t| soulti_cpx(t, 0.02), [0.0, 50.0], &frequencies, fs);
+            let mut s = cwt.process_par(&y);
         }
         _ => panic!("read error or wrong wave type"),
     }
