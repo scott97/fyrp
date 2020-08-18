@@ -5,8 +5,6 @@ use rayon::prelude::*;
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use rustfft::FFTplanner;
-use rustfft::FFT;
-use std::sync::Arc;
 
 pub struct FftCpxFilterBank {
     filter_bank: Vec<Vec<Complex<f32>>>, // calculated at new

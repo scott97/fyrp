@@ -27,28 +27,11 @@ mod tests {
     use crate::cwt::alg::Cwt;
     use crate::cwt::wavelets;
     use crate::iter;
+    use crate::get_data;
     use std::fs::File;
     use std::path::Path;
     use test::Bencher;
 
-    fn get_data(duration: f32) -> Option<(Vec<f32>, u32)> {
-        let input_file = Path::new("data.wav");
-        let mut inp_file = File::open(input_file).unwrap();
-        let (header, data) = wav::read(&mut inp_file).unwrap();
-        let fs = header.sampling_rate;
-
-        // Remap to range -1.0 to 1.0, and take only 1000ms
-        if let wav::BitDepth::Sixteen(raw_signal) = data {
-            let y = raw_signal
-                .iter()
-                .map(|x| (*x as f32) / (i16::MAX as f32))
-                .take((duration * fs as f32) as usize)
-                .collect();
-            Some((y, fs))
-        } else {
-            None
-        }
-    }
 
     // All tests are on 100 ms of audio, with frequency bands
     // from 1 kHz to 9 kHz with an interval of 20Hz.

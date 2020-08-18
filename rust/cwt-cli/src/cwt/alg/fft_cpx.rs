@@ -3,7 +3,6 @@ use crate::conv;
 use crate::iter::rangef;
 use rayon::prelude::*;
 use rustfft::num_complex::Complex;
-use std::borrow::Borrow;
 
 pub struct FftCpx {
     wvt_fn: fn(f32) -> Complex<f32>,
@@ -29,7 +28,6 @@ impl FftCpx {
 }
 
 impl Cwt for FftCpx {
-    // #[exec_time]
     fn process(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
         let sig_cpx: Vec<Complex<f32>> = sig.map(|x| Complex::from(x)).collect();
 
@@ -52,7 +50,6 @@ impl Cwt for FftCpx {
             })
             .collect()
     }
-    // #[exec_time]
     fn process_par(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
         let sig_cpx: Vec<Complex<f32>> = sig.map(|x| Complex::from(x)).collect();
 
