@@ -1,3 +1,7 @@
+#![feature(test)] // for benchmarks.
+
+extern crate test; // for benchmarks.
+
 #[macro_use]
 extern crate exec_time;
 
@@ -53,11 +57,6 @@ fn main() {
             }
             wtr.flush().unwrap();
 
-            // Benchmark cwt variants
-            // let mut cwt = cwt::alg::FftCpx::new(|t| soulti_cpx(t, 0.02), [0.0, 50.0], &frequencies, fs);
-            // let mut s = cwt.process_par(&y);
-            // let mut cwt = cwt::alg::FftCpxFilterBank::new(1.000, |t| soulti_cpx(t, 0.02), [0.0, 50.0], &frequencies, fs);
-            // let mut s = cwt.process_par(&y);
         }
         _ => panic!("read error or wrong wave type"),
     }
