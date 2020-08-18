@@ -1,8 +1,9 @@
 use super::Cwt;
-use rustfft::num_complex::Complex;
-use rayon::prelude::*;
 use crate::conv;
 use crate::iter::rangef;
+use rayon::prelude::*;
+use rustfft::num_complex::Complex;
+use std::borrow::Borrow;
 
 pub struct FftCpx {
     wvt_fn: fn(f32) -> Complex<f32>,
@@ -28,8 +29,10 @@ impl FftCpx {
 }
 
 impl Cwt for FftCpx {
-    #[exec_time]
-    fn process(&mut self, sig: &Vec<f32>) -> Vec<Vec<f32>> {
+    // #[exec_time]
+    fn process(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
+        let sig_cpx: Vec<Complex<f32>> = sig.map(|x| Complex::from(x)).collect();
+
         self.frequencies
             .iter()
             .map(|f| {
@@ -40,14 +43,19 @@ impl Cwt for FftCpx {
                     self.step,
                 );
                 let k = 1.0 / scale.sqrt();
-                let wvt: Vec<Complex<f32>> = t.map(|t| k * (self.wvt_fn)(t / scale)).rev().collect();
 
-                conv::conv_fft_cpx(&sig, &wvt)[wvt.len()..].to_vec()
+                let mut sig_cpx_mut: Vec<Complex<f32>> = sig_cpx.to_vec();
+                let mut wvt: Vec<Complex<f32>> =
+                    t.map(|t| k * (self.wvt_fn)(t / scale)).rev().collect();
+
+                conv::conv_fft_cpx(&mut sig_cpx_mut, &mut wvt)[wvt.len()..].to_vec()
             })
             .collect()
     }
-    #[exec_time]
-    fn process_par(&mut self, sig: &Vec<f32>) -> Vec<Vec<f32>> {
+    // #[exec_time]
+    fn process_par(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
+        let sig_cpx: Vec<Complex<f32>> = sig.map(|x| Complex::from(x)).collect();
+
         self.frequencies
             .par_iter()
             .map(|f| {
@@ -58,9 +66,12 @@ impl Cwt for FftCpx {
                     self.step,
                 );
                 let k = 1.0 / scale.sqrt();
-                let wvt: Vec<Complex<f32>> = t.map(|t| k * (self.wvt_fn)(t / scale)).rev().collect();
 
-                conv::conv_fft_cpx(&sig, &wvt)[wvt.len()..].to_vec()
+                let mut sig_cpx_mut: Vec<Complex<f32>> = sig_cpx.to_vec();
+                let mut wvt: Vec<Complex<f32>> =
+                    t.map(|t| k * (self.wvt_fn)(t / scale)).rev().collect();
+
+                conv::conv_fft_cpx(&mut sig_cpx_mut, &mut wvt)[wvt.len()..].to_vec()
             })
             .collect()
     }

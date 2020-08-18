@@ -31,18 +31,18 @@ fn main() {
             println!("read success (i16), length {:?}", raw_signal.len());
 
             // Remap to range -1.0 to 1.0, and take only 1000ms
-            let y = raw_signal
+            let mut y = raw_signal
                 .iter()
                 .map(|x| (*x as f32) / (i16::MAX as f32))
-                .take((1.000* fs as f32) as usize)
-                .collect::<Vec<f32>>();
+                .take((1.000* fs as f32) as usize);
 
             // Frequencies (1 to 9 kHz at interval of 20Hz)
             let frequencies: Vec<f32> = iter::rangef(1000.0, 9000.0, 20.0).collect();
 
             // Do cwt
-            let mut cwt = cwt::alg::FftCpxFilterBank::new(1.000, |t| soulti_cpx(t, 0.02), [0.0, 50.0], &frequencies, fs);
-            let mut s = cwt.process_par(&y);
+            // let mut cwt = cwt::alg::FftCpxFilterBank::new(1.000, |t| soulti_cpx(t, 0.02), [0.0, 50.0], &frequencies, fs);
+            let mut cwt = cwt::alg::FftCpx::new(|t| soulti_cpx(t, 0.02), [0.0, 50.0], &frequencies, fs);
+            let mut s = cwt.process_par(&mut y);
             analysis::threshold(&mut s, 100.);
 
             // Write cwt data to a file
@@ -54,10 +54,10 @@ fn main() {
             wtr.flush().unwrap();
 
             // Benchmark cwt variants
-            let mut cwt = cwt::alg::FftCpx::new(|t| soulti_cpx(t, 0.02), [0.0, 50.0], &frequencies, fs);
-            let mut s = cwt.process_par(&y);
-            let mut cwt = cwt::alg::FftCpxFilterBank::new(1.000, |t| soulti_cpx(t, 0.02), [0.0, 50.0], &frequencies, fs);
-            let mut s = cwt.process_par(&y);
+            // let mut cwt = cwt::alg::FftCpx::new(|t| soulti_cpx(t, 0.02), [0.0, 50.0], &frequencies, fs);
+            // let mut s = cwt.process_par(&y);
+            // let mut cwt = cwt::alg::FftCpxFilterBank::new(1.000, |t| soulti_cpx(t, 0.02), [0.0, 50.0], &frequencies, fs);
+            // let mut s = cwt.process_par(&y);
         }
         _ => panic!("read error or wrong wave type"),
     }

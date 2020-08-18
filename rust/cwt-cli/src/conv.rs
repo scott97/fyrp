@@ -89,17 +89,12 @@ pub fn conv_fft(sig: &Vec<f32>, fir: &Vec<f32>) -> Vec<f32> {
 }
 
 // Complex convolution
-pub fn conv_fft_cpx(sig: &Vec<f32>, fir: &Vec<Complex<f32>>) -> Vec<f32> {
+pub fn conv_fft_cpx(mut sig: &mut Vec<Complex<f32>>, mut fir: &mut Vec<Complex<f32>>) -> Vec<f32> {
     let n = sig.len() + fir.len() - 1;
 
-    // Time domain
-    let mut tsig: Vec<Complex<f32>> = sig
-        .iter()
-        .pad_using(n, |_i| &0.0)
-        .map(|t| Complex::from(t))
-        .collect();
-    let mut tfir: Vec<Complex<f32>> = fir.to_vec();
-    tfir.resize(n, Complex::zero());
+    // Pad to length
+    sig.resize(n, Complex::zero());
+    fir.resize(n, Complex::zero());
 
     // Frequency domain
     let mut fsig: Vec<Complex<f32>> = vec![Complex::zero(); n];
@@ -107,8 +102,8 @@ pub fn conv_fft_cpx(sig: &Vec<f32>, fir: &Vec<Complex<f32>>) -> Vec<f32> {
 
     // Do FFT
     let fft = FFTplanner::new(false).plan_fft(n);
-    fft.process(&mut tsig, &mut fsig);
-    fft.process(&mut tfir, &mut ffir);
+    fft.process(&mut sig, &mut fsig);
+    fft.process(&mut fir, &mut ffir);
 
     // Elementwise multiplication
     // Dividing each individually by sqrt(n) is the same as dividing both by n.

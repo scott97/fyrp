@@ -18,6 +18,7 @@ pub use self::fft_cpx_filterbank::FftCpxFilterBank;
 
 // Traits
 pub trait Cwt {
-    fn process(&mut self, sig: &Vec<f32>) -> Vec<Vec<f32>>;
-    fn process_par(&mut self, sig: &Vec<f32>) -> Vec<Vec<f32>>;
+    fn process(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>>;
+    fn process_par(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>>;
 }
+
