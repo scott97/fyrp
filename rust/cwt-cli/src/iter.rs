@@ -84,11 +84,12 @@ mod tests {
     #[test]
     fn test_circ_iter() {
         let mut cbuf = CircularBuffer::<f32>::new(5);
-        cbuf.add(1.);
-        cbuf.add(2.);
-        cbuf.add(3.);
-        cbuf.add(4.);
-        cbuf.add(5.);
+        
+        cbuf.add(1.).unwrap();
+        cbuf.add(2.).unwrap();
+        cbuf.add(3.).unwrap();
+        cbuf.add(4.).unwrap();
+        cbuf.add(5.).unwrap();
 
         {
             let mut iter = CircIter {
