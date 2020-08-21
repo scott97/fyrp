@@ -41,7 +41,7 @@ impl Cwt for Standard {
                 let k = 1.0 / scale.sqrt();
                 let wvt: Vec<f32> = t.map(|t| k * (self.wvt_fn)(t / scale)).collect();
 
-                conv::conv(&sig, &wvt)[wvt.len()..].to_vec()
+                conv::conv(&sig, &wvt)[..sig.len()].to_vec()
             })
             .collect()
     }
