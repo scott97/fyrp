@@ -47,9 +47,11 @@ fn main() {
         let mut y = d.into_iter();
 
         // Do cwt
-        let mut cwt = alg::FftCpx::new(|t| wavelets::soulti_cpx(t, 0.02), [0.0, 50.0], &f, fs);
+        let mut cwt = alg::FftCpxFilterBank::new(0.100,|t| wavelets::soulti_cpx(t, 0.02), [0.0, 50.0], &f, fs);
         let mut s = cwt.process(&mut y);
         analysis::threshold(&mut s, 100.);
+
+        println!("Size of s: {}×{}",s.len(),s[0].len());
 
         // Write cwt data to a file
         let mut wtr = csv::Writer::from_path(output_file).unwrap();
