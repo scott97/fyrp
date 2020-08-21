@@ -41,7 +41,7 @@ plot_utils.hydrophone_array(loc1,loc2,loc3);
 fs = 44100;
 
 % Location 1
-[y,t] = cached_one_hydrophone(source_data, fs, loc1);
+[y,t] = cached_one_hydrophone(source_data, fs, loc1, 1.5);
 y = bandpass(y,[500 9000],fs);
 [s,f] = cwt(y,fs);
 peaks = bubble_analysis.find_peaks(s,f,t,0.09);
@@ -51,7 +51,7 @@ plot_utils.peaks(peaks,'r');
 plot_utils.peaks(comparison_data,'g');
 
 % Location 2
-[y,t] = cached_one_hydrophone(source_data, fs, loc2);
+[y,t] = cached_one_hydrophone(source_data, fs, loc2, 1.5);
 y = bandpass(y,[500 9000],fs);
 [s,f] = cwt(y,fs);
 peaks = bubble_analysis.find_peaks(s,f,t,0.09);
@@ -61,7 +61,7 @@ plot_utils.peaks(peaks,'r');
 plot_utils.peaks(comparison_data,'g');
 
 % Location 3
-[y,t] = cached_one_hydrophone(source_data, fs, loc3);
+[y,t] = cached_one_hydrophone(source_data, fs, loc3, 1.5);
 y = bandpass(y,[500 9000],fs);
 [s,f] = cwt(y,fs);
 peaks = bubble_analysis.find_peaks(s,f,t,0.09);

@@ -2,8 +2,10 @@ function [radii, timestamps, icdd, xpos, ypos] = source_data(n,duration)
     % n - number of bubbles
     % duration - the length in time of data
 
-    % Setup random so its consistent
+    % Setup random so it uses the same seed each time
+    % This will give a consistent output between runs
     rng(1,'philox');
+
 
     % Radii (mm)
     mu  = 1.500;

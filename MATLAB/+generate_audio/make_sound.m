@@ -21,10 +21,12 @@ function d = make_sound(R_0, ddot_0, T, t)
     % Evaluate
     d = M * exp(-k .* (t-T)) .* sin(w .* (t-T)) .* ((t-T) > 0);
 
-    % Temporary fix **** this is bad
-    if ~all(isfinite(d))
-        d = zeros(size(t));
-    end
+    % The exp function is causing infinities or NaNs for large negative numbers of (t-T)
+    % These matrix elements should be zero because they occur before T.
+    % This patches them up as zero.
+    TF = isnan(d);
+    d(TF) = 0;
+
 
 end
 

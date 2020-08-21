@@ -63,7 +63,7 @@ soulti_cpx = @(t) 1/k .* exp(-zeta/k * tau .* t) .* exp(j*tau .* t) .* (t>0);
 % plot(t,soulti_cpx(t))
 
 % Get data
-[y,t] = cached_one_hydrophone(source_data, fs, loc);
+[y,t] = cached_one_hydrophone(source_data, fs, loc,1.5);
 y = bandpass(y,[100 9000],fs);
 
 % Plot CWT

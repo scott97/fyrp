@@ -1,4 +1,4 @@
-function [y,t] = one_hydrophone(data, fs, loc)
+function [y,t] = one_hydrophone(data, fs, loc, duration)
 
     % Constants
     c = 1500e3; % Speed of sound seawater (mm/s)
@@ -10,9 +10,8 @@ function [y,t] = one_hydrophone(data, fs, loc)
     xpos = data(4,:);
     ypos = data(5,:);
 
-
     % Make sounds
-    t = 0:(1/fs):1.5;
+    t = 0:(1/fs):duration;
     y = zeros(1,length(t));
 
     for i = 1:length(t_val)
@@ -23,11 +22,11 @@ function [y,t] = one_hydrophone(data, fs, loc)
         att = 1/(dist^2);
         delay = dist/c;
         d = generate_audio.make_sound(R_0(i), dd_ic(i), t_val(i) + delay, t)*att;
-        y = y + d;  
+        y = y + d;
     end
 
     % Add some signal noise to simulate electrical noise
-    n = 0.05*max(y);
+    n = 0.025*max(y);
     y = y + randn([1,length(y)]) * n;
 
 end
