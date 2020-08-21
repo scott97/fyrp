@@ -42,7 +42,7 @@ impl Cwt for Fft {
                 let k = 1.0 / scale.sqrt();
                 let wvt: Vec<f32> = t.map(|t| k * (self.wvt_fn)(t / scale)).collect();
 
-                conv::conv_fft(&sig, &wvt)[wvt.len()..].to_vec()
+                conv::conv_fft(&sig, &wvt)[..sig.len()].to_vec()
             })
             .collect()
     }
