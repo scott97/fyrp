@@ -1,8 +1,10 @@
 % Import cwt data
-s = readmatrix('scaleogram.csv');
+s = csvread('scaleogram.csv');
 
 % Plot CWT
 fs = 44100;
-t = (0:length(s)-1)/fs;
-f = 1000:10:9000;
+
+[h,l] = size(s)
+t = (0:l-1)/fs;
+f = linspace(1000,9000,h);
 plot_utils.scaleogram(s,f,t,[0 100],[1 9],'my cwt (rust impl)');
