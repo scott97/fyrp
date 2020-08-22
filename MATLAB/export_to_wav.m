@@ -32,5 +32,8 @@ fs = 44100;
 y = ( y - min(y) ) / ( max(y) - min(y) );
 y = 2 .* (y - 0.5);
 
-% Export data
+% Export audio
 audiowrite('data.wav',y,fs);
+
+% Export source data
+csvwrite('source_data.csv',source_data);
