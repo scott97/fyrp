@@ -99,9 +99,9 @@ fn main() {
         // Receive from the channel, and process.
         let frequency_bands: Vec<f32> = iter::rangef(1000.0, 9000.0, 20.0).collect();
         let mut cwt = alg::FftCpxFilterBank::new(
-            0.100,
+            len,
+            take,
             |t| wavelets::soulti_cpx(t, 0.02),
-            [0.0, 50.0],
             &frequency_bands,
             fs,
         );
@@ -115,8 +115,8 @@ fn main() {
             }
 
             // Process chunk
-            let mut s = cwt.process(&mut chunk.into_iter());
-            analysis::threshold(&mut s, 100.);
+            let mut s = cwt.process_par(&mut chunk.into_iter());
+            // analysis::threshold(&mut s, 100.);
             export_scaleogram(&s, idx);
         }
 

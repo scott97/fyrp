@@ -5,38 +5,31 @@ use rayon::prelude::*;
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use rustfft::FFTplanner;
+use rustfft::FFT;
+use std::sync::Arc;
 
 pub struct FftCpxFilterBank {
-    filter_bank: Vec<Vec<Complex<f32>>>, // calculated at new
+    filter_bank: Vec<Vec<Complex<f32>>>, // Calculated ahead of time and reused.
+    take: usize,                         // Length to save.
 }
 
 impl FftCpxFilterBank {
     pub fn new(
-        signal_duration: f32,
+        chunk_len: usize,
+        max_wvt_len: usize, // Length to discard.
         wvt_fn: fn(f32) -> Complex<f32>,
-        wvt_bounds: [f32; 2],
         frequencies: &Vec<f32>,
         fs: u32,
     ) -> FftCpxFilterBank {
-        let sig_len = (signal_duration * fs as f32).ceil() as usize;
-
-        let step = 1.0 / (fs as f32);
         let filter_bank: Vec<Vec<Complex<f32>>> = frequencies
             .par_iter()
             .map(|f| {
-                let scale = 1.0 / f;
-                let t = rangef(wvt_bounds[0] * scale, wvt_bounds[1] * scale, step);
-                let k = 1.0 / scale.sqrt();
-                let zeros = vec![Complex::zero(); sig_len - 1].into_iter();
-                let mut wvt_t: Vec<Complex<f32>> = t
-                    .map(|t| k * wvt_fn(t / scale))
-                    .chain(zeros)
-                    .rev()
-                    .collect();
-                let n = wvt_t.len();
-                let mut wvt_f: Vec<Complex<f32>> = vec![Complex::zero(); n];
+                let t = (0..chunk_len).map(|x| x as f32 / fs as f32);
+                let mut wvt_t: Vec<Complex<f32>> =
+                    t.map(|t| f.sqrt() * wvt_fn(t * f)).rev().collect();
 
-                let fft = FFTplanner::new(false).plan_fft(n);
+                let mut wvt_f: Vec<Complex<f32>> = vec![Complex::zero(); chunk_len];
+                let fft = FFTplanner::<f32>::new(false).plan_fft(chunk_len);
                 fft.process(&mut wvt_t, &mut wvt_f);
 
                 wvt_f
@@ -45,82 +38,75 @@ impl FftCpxFilterBank {
 
         FftCpxFilterBank {
             filter_bank: filter_bank,
+            take: chunk_len - max_wvt_len,
         }
     }
 }
 
 impl Cwt for FftCpxFilterBank {
     fn process(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
-        let sig: Vec<f32> = sig.collect();
-        // Convolution of signal with filters
+        // Copy signal into a vector of complex numbers.
+        let mut sig_t: Vec<Complex<f32>> = sig.map(|t| Complex::from(t)).collect();
+        // Signal length.
+        let n = sig_t.len();
+        let n_recip = (n as f32).recip();
+
+        // Apply Fourier Transform to signal.
+        let mut sig_f: Vec<Complex<f32>> = vec![Complex::zero(); n];
+        let fft = FFTplanner::<f32>::new(false).plan_fft(n);
+        fft.process(&mut sig_t, &mut sig_f);
+
+        // Convolution of signal with filters.
         self.filter_bank
             .iter()
             .map(|wvt| {
-                // Initial setup.
-                let n = wvt.len();
-                let fft = FFTplanner::new(false).plan_fft(n);
-                let ifft = FFTplanner::new(true).plan_fft(n);
-
-                // Apply Fourier Transform to signal.
-                let mut sig_t: Vec<Complex<f32>> = sig
-                    .iter()
-                    .pad_using(n, |_i| &0.0)
-                    .map(|t| Complex::from(t))
-                    .collect();
-                let mut sig_f: Vec<Complex<f32>> = vec![Complex::zero(); n];
-                fft.process(&mut sig_t, &mut sig_f);
-
                 // Do convolution via element-wise multiplication.
                 let mut row_f: Vec<Complex<f32>> = vec![Complex::zero(); n];
-                let n_inv = 1. / (n as f32);
                 for i in 0..n {
-                    row_f[i] = sig_f[i] * wvt[i] * n_inv;
+                    row_f[i] = sig_f[i] * wvt[i] * n_recip;
                 }
 
                 // Do IFFT
                 let mut row_t: Vec<Complex<f32>> = vec![Complex::zero(); n];
+                let ifft = FFTplanner::<f32>::new(true).plan_fft(n);
                 ifft.process(&mut row_f, &mut row_t);
 
-                // Only take n values, where n is the length of the signal
+                // Only take the values to save
                 // Find absolute value of complex values
-                row_t.iter().take(sig.len()).map(|i| i.norm()).collect()
+                row_t.iter().take(self.take).map(|i| i.norm()).collect()
             })
             .collect()
     }
     fn process_par(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
-        let sig: Vec<f32> = sig.collect();
-        // Convolution of signal with filters
+        // Copy signal into a vector of complex numbers.
+        let mut sig_t: Vec<Complex<f32>> = sig.map(|t| Complex::from(t)).collect();
+        // Signal length.
+        let n = sig_t.len();
+        let n_recip = (n as f32).recip();
+
+        // Apply Fourier Transform to signal.
+        let mut sig_f: Vec<Complex<f32>> = vec![Complex::zero(); n];
+        let fft = FFTplanner::<f32>::new(false).plan_fft(n);
+        fft.process(&mut sig_t, &mut sig_f);
+
+        // Convolution of signal with filters.
         self.filter_bank
-            .par_iter()
+            .iter()
             .map(|wvt| {
-                // Initial setup.
-                let n = wvt.len();
-                let fft = FFTplanner::new(false).plan_fft(n);
-                let ifft = FFTplanner::new(true).plan_fft(n);
-
-                // Apply Fourier Transform to signal.
-                let mut sig_t: Vec<Complex<f32>> = sig
-                    .iter()
-                    .pad_using(n, |_i| &0.0)
-                    .map(|t| Complex::from(t))
-                    .collect();
-                let mut sig_f: Vec<Complex<f32>> = vec![Complex::zero(); n];
-                fft.process(&mut sig_t, &mut sig_f);
-
                 // Do convolution via element-wise multiplication.
                 let mut row_f: Vec<Complex<f32>> = vec![Complex::zero(); n];
-                let n_inv = 1. / (n as f32);
                 for i in 0..n {
-                    row_f[i] = sig_f[i] * wvt[i] * n_inv;
+                    row_f[i] = sig_f[i] * wvt[i] * n_recip;
                 }
 
                 // Do IFFT
                 let mut row_t: Vec<Complex<f32>> = vec![Complex::zero(); n];
+                let ifft = FFTplanner::<f32>::new(true).plan_fft(n);
                 ifft.process(&mut row_f, &mut row_t);
 
-                // Only take n values, where n is the length of the signal
+                // Only take the values to save
                 // Find absolute value of complex values
-                row_t.iter().take(sig.len()).map(|i| i.norm()).collect()
+                row_t.iter().take(self.take).map(|i| i.norm()).collect()
             })
             .collect()
     }
