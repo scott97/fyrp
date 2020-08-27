@@ -9,5 +9,6 @@ function plot_from_csv(idx)
     [h,l] = size(s)
     t = (0:l-1)/fs;
     f = linspace(1000,9000,h);
-    plot_utils.scaleogram(s,f,t,[0 100],[1 9],'my cwt (rust impl)');
+    
+    plot_utils.scaleogram(s,f,t,[min(t)*1000 max(t)*1000],[1 9],'my cwt (rust impl)');
 end
