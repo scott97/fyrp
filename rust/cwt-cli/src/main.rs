@@ -100,7 +100,7 @@ fn main() {
         let frequency_bands: Vec<f32> = iter::rangef(1000.0, 9000.0, 20.0).collect();
         let mut cwt = alg::FftCpxFilterBank::new(
             len,
-            take,
+            peek,
             |t| wavelets::soulti_cpx(t, 0.02),
             &frequency_bands,
             fs,
