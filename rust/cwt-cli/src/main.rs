@@ -59,14 +59,34 @@ fn export_scaleogram(s: &Vec<Vec<f32>>, idx: usize) {
     wtr.flush().unwrap();
 }
 
+// Write bubble identification data to a csv file
+fn export_bubble_data(b: &Vec<(usize,usize)>, idx: usize) {
+    let name = format!("bubbles{}.csv", idx);
+
+    println!(
+        "Exporting bubble data ({}) as file: {}",
+        b.len(),
+        name
+    );
+
+    let path = Path::new(&name);
+    let mut wtr = csv::Writer::from_path(path).unwrap();
+    let text_vec: Vec<String> = b.iter().map(|(f,_)| format!("{}",f)).collect();
+    wtr.write_record(&text_vec).unwrap();
+    let text_vec: Vec<String> = b.iter().map(|(_,t)| format!("{}",t)).collect();
+    wtr.write_record(&text_vec).unwrap();
+    wtr.flush().unwrap();
+}
+
 fn main() {
     if let Some((d, fs)) = get_data() {
         println!("Signal length {}", d.len());
         println!("Sample rate {}", fs);
 
         // Chunk length requirements.
+        const PEAK_FINDING_OVERLAP: usize = 1;
         let len = (0.100 * fs as f32) as usize;
-        let peek = (50e-3 * fs as f32) as usize;
+        let peek = (50e-3 * fs as f32) as usize + PEAK_FINDING_OVERLAP;
         let take = len - peek;
 
         // Channel
@@ -116,8 +136,10 @@ fn main() {
 
             // Process chunk
             let mut s = cwt.process_par(&mut chunk.into_iter());
-            // analysis::threshold(&mut s, 100.);
             export_scaleogram(&s, idx);
+            analysis::threshold(&mut s, 100.);
+            let b = analysis::find_bubbles(&s);
+            export_bubble_data(&b, idx);
         }
 
         t.join().unwrap();
