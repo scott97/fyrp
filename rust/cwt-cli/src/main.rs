@@ -62,6 +62,7 @@ fn export_scaleogram(s: &Vec<Vec<f32>>, idx: usize) {
 // Write bubble identification data to a csv file
 fn export_bubble_data(b: &Vec<(f32,usize)>, idx: usize) {
     let name = format!("bubbles{}.csv", idx);
+    let path = Path::new(&name);
 
     println!(
         "Exporting bubble data ({}) as file: {}",
@@ -69,13 +70,16 @@ fn export_bubble_data(b: &Vec<(f32,usize)>, idx: usize) {
         name
     );
 
-    let path = Path::new(&name);
-    let mut wtr = csv::Writer::from_path(path).unwrap();
-    let text_vec: Vec<String> = b.iter().map(|(f,_)| format!("{:e}",f)).collect();
-    wtr.write_record(&text_vec).unwrap();
-    let text_vec: Vec<String> = b.iter().map(|(_,t)| format!("{}",t)).collect();
-    wtr.write_record(&text_vec).unwrap();
-    wtr.flush().unwrap();
+    if b.len() > 0 {
+        let mut wtr = csv::Writer::from_path(path).unwrap();
+        let text_vec: Vec<String> = b.iter().map(|(f,_)| format!("{:e}",f)).collect();
+        wtr.write_record(&text_vec).unwrap();
+        let text_vec: Vec<String> = b.iter().map(|(_,t)| format!("{}",t)).collect();
+        wtr.write_record(&text_vec).unwrap();
+        wtr.flush().unwrap();
+    } else {
+        let mut file = File::create(name).unwrap();
+    }
 }
 
 fn main() {
