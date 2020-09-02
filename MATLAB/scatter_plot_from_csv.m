@@ -6,13 +6,13 @@ ylabel('Radius (mm)')
 colorbar
 
 % Import & plot theoretical values
-csv = csvread('source_data.csv');
+csv = csvread('../tmp/source_data.csv');
 plot_utils.peaks(csv,'k');
 
 % Import & plot algorithm output
 hold on
 for idx = from:to
-    file = sprintf('bubbles%d.csv', idx);
+    file = sprintf('../tmp/bubbles%d.csv', idx);
     disp(file)
     colours = ['r+';'g+';'b+';'m+'];
     

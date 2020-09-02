@@ -10,6 +10,7 @@ mod conv;
 mod cwt;
 mod iter;
 
+
 use std::fs::File;
 use std::path::Path;
 use std::sync::mpsc;
@@ -21,7 +22,7 @@ use cwt::alg::Cwt;
 use cwt::wavelets;
 
 fn get_data() -> Option<(Vec<f32>, u32)> {
-    let input_file = Path::new("data.wav");
+    let input_file = Path::new("tmp/data.wav");
     let mut inp_file = File::open(input_file).unwrap();
     let (header, data) = wav::read(&mut inp_file).unwrap();
     let fs = header.sampling_rate;
@@ -41,7 +42,7 @@ fn get_data() -> Option<(Vec<f32>, u32)> {
 
 // Write scaleogram data to a csv file
 fn export_scaleogram(s: &Vec<Vec<f32>>, idx: usize) {
-    let name = format!("scaleogram{}.csv", idx);
+    let name = format!("tmp/scaleogram{}.csv", idx);
 
     println!(
         "Exporting scaleogram ({}×{}) as file: {}",
@@ -61,7 +62,7 @@ fn export_scaleogram(s: &Vec<Vec<f32>>, idx: usize) {
 
 // Write bubble identification data to a csv file
 fn export_bubble_data(b: &Vec<(f32,f32)>, idx: usize) {
-    let name = format!("bubbles{}.csv", idx);
+    let name = format!("tmp/bubbles{}.csv", idx);
     let path = Path::new(&name);
 
     println!(
