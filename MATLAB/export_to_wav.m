@@ -36,4 +36,8 @@ y = 2 .* (y - 0.5);
 audiowrite('data.wav',y,fs);
 
 % Export source data
+source_data = [
+	radii(zone);
+    timestamps(zone);
+];
 csvwrite('source_data.csv',source_data);

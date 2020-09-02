@@ -60,7 +60,7 @@ fn export_scaleogram(s: &Vec<Vec<f32>>, idx: usize) {
 }
 
 // Write bubble identification data to a csv file
-fn export_bubble_data(b: &Vec<(f32,usize)>, idx: usize) {
+fn export_bubble_data(b: &Vec<(f32,f32)>, idx: usize) {
     let name = format!("bubbles{}.csv", idx);
     let path = Path::new(&name);
 
@@ -72,9 +72,9 @@ fn export_bubble_data(b: &Vec<(f32,usize)>, idx: usize) {
 
     if b.len() > 0 {
         let mut wtr = csv::Writer::from_path(path).unwrap();
-        let text_vec: Vec<String> = b.iter().map(|(f,_)| format!("{:e}",f)).collect();
+        let text_vec: Vec<String> = b.iter().map(|(rad,_)| format!("{:e}",rad)).collect();
         wtr.write_record(&text_vec).unwrap();
-        let text_vec: Vec<String> = b.iter().map(|(_,t)| format!("{}",t)).collect();
+        let text_vec: Vec<String> = b.iter().map(|(_,ts)| format!("{:e}",ts)).collect();
         wtr.write_record(&text_vec).unwrap();
         wtr.flush().unwrap();
     } else {
@@ -89,7 +89,7 @@ fn main() {
 
         // Chunk length requirements.
         const PEAK_FINDING_OVERLAP: usize = 1;
-        let len = (0.100 * fs as f32) as usize;
+        let len = (250e-3 * fs as f32) as usize;
         let peek = (50e-3 * fs as f32) as usize + PEAK_FINDING_OVERLAP;
         let take = len - peek;
 
@@ -140,9 +140,9 @@ fn main() {
 
             // Process chunk
             let mut s = cwt.process_par(&mut chunk.into_iter());
-            export_scaleogram(&s, idx);
+            // export_scaleogram(&s, idx);
             analysis::threshold(&mut s, 100.);
-            let b = analysis::find_bubbles(&s,&frequency_bands);
+            let b = analysis::find_bubbles(&s,&frequency_bands,fs);
             export_bubble_data(&b, idx);
         }
 
