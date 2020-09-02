@@ -9,6 +9,7 @@ mod analysis;
 mod conv;
 mod cwt;
 mod iter;
+mod mean_shift_clustering;
 
 
 use std::fs::File;
