@@ -1,4 +1,5 @@
 #![feature(test)] // for benchmarks.
+#![feature(box_syntax)] // for box.
 
 extern crate test; // for benchmarks.
 
@@ -6,148 +7,166 @@ extern crate test; // for benchmarks.
 extern crate approx;
 
 mod analysis;
+mod config;
 mod conv;
 mod cwt;
+mod fileio;
 mod iter;
 mod mean_shift_clustering;
 
-
-use std::fs::File;
-use std::path::Path;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
+use structopt::StructOpt;
 
+use config::*;
 use cwt::alg;
 use cwt::alg::Cwt;
 use cwt::wavelets;
 
-fn get_data() -> Option<(Vec<f32>, u32)> {
-    let input_file = Path::new("tmp/data.wav");
-    let mut inp_file = File::open(input_file).unwrap();
-    let (header, data) = wav::read(&mut inp_file).unwrap();
-    let fs = header.sampling_rate;
 
-    // Remap to range -1.0 to 1.0
-    if let wav::BitDepth::Sixteen(raw_signal) = data {
-        println!("Read success (i16)");
-        let y = raw_signal
-            .iter()
-            .map(|x| (*x as f32) / (i16::MAX as f32))
-            .collect();
-        Some((y, fs))
-    } else {
-        None
-    }
-}
 
-// Write scaleogram data to a csv file
-fn export_scaleogram(s: &[Vec<f32>], idx: usize) {
-    let name = format!("tmp/scaleogram{}.csv", idx);
+use winapi_util::console::{Console, Color, Intense};
 
-    println!(
-        "Exporting scaleogram ({}×{}) as file: {}",
-        s.len(),
-        s[0].len(),
-        name
-    );
-
-    let path = Path::new(&name);
-    let mut wtr = csv::Writer::from_path(path).unwrap();
-    for row in s.iter() {
-        let text_vec: Vec<String> = row.iter().map(|n| format!("{:e}", n)).collect(); // Use sci notation
-        wtr.write_record(&text_vec).unwrap();
-    }
-    wtr.flush().unwrap();
-}
-
-// Write bubble identification data to a csv file
-fn export_bubble_data(b: &[(f32,f32)], idx: usize) {
-    let name = format!("tmp/bubbles{}.csv", idx);
-    let path = Path::new(&name);
-
-    println!(
-        "Exporting bubble data ({}) as file: {}",
-        b.len(),
-        name
-    );
-
-    if !b.is_empty() {
-        let mut wtr = csv::Writer::from_path(path).unwrap();
-        let text_vec: Vec<String> = b.iter().map(|(rad,_)| format!("{:e}",rad)).collect();
-        wtr.write_record(&text_vec).unwrap();
-        let text_vec: Vec<String> = b.iter().map(|(_,ts)| format!("{:e}",ts)).collect();
-        wtr.write_record(&text_vec).unwrap();
-        wtr.flush().unwrap();
-    } else {
-        File::create(name).unwrap();
-    }
-}
 
 fn main() {
-    if let Some((d, fs)) = get_data() {
-        println!("Signal length {}", d.len());
-        println!("Sample rate {}", fs);
+    let opt = Opt::from_args();
 
-        // Chunk length requirements.
-        const PEAK_FINDING_OVERLAP: usize = 1;
-        let len = (250e-3 * fs as f32) as usize;
-        let peek = (50e-3 * fs as f32) as usize + PEAK_FINDING_OVERLAP;
-        let take = len - peek;
+    if opt.debug {
+        let mut con = Console::stdout().unwrap();
+        con.fg(Intense::Yes, Color::Magenta).unwrap();
+        println!("Debug mode enabled.");
+        con.reset().unwrap();
+        println!("Configuration: {:#?}",&opt);
+    }
 
-        // Channel
-        let (tx, rx): (Sender<f32>, Receiver<f32>) = mpsc::channel();
+    let (d, fs) = fileio::get_data(opt.input.as_path()).unwrap();
 
-        // Send chunks over channel. Prepare chunks with overlapping data.
-        let tx_thread = tx.clone(); // Threads take a copy of the sender.
-        let t = thread::spawn(move || {
+    if opt.debug {
+        println!("Read success.");
+        println!(
+            "Signal duration: {} ms.",
+            1000. * d.len() as f32 / fs as f32
+        );
+        println!("Sample rate: {} Hz.", fs);
+    }
 
-            // Iterator
-            let mut iter = d.into_iter().peekable();
+    // Chunk length requirements.
+    const PEAK_FINDING_OVERLAP: usize = 2;
+    let take = (opt.segment_size * 1e-3 * fs as f32) as usize;
+    let peek = (50e-3 * fs as f32) as usize + PEAK_FINDING_OVERLAP;
+    let len = take + peek;
+    let total_len = d.len();
 
-            // Read in data into the channel.
-            loop {
-                for _i in 0..take {
-                    match iter.next() {
-                        Some(x) => tx_thread.send(x).unwrap(),
-                        None => panic!("Ran out of data"),
-                    }
-                }
-                for _i in 0..peek {
-                    match iter.peek() {
-                        Some(x) => tx_thread.send(*x).unwrap(),
-                        None => panic!("Ran out of data"),
-                    }
+    // Channel
+    let (tx, rx): (Sender<f32>, Receiver<f32>) = mpsc::channel();
+
+    // Send chunks over channel. Prepare chunks with overlapping data.
+    let t = thread::spawn(move || {
+        // Iterator
+        let mut iter = d.into_iter().peekable();
+
+        // Read in data into the channel.
+        'outer: loop {
+            for _i in 0..take {
+                match iter.next() {
+                    Some(x) => tx.send(x).unwrap(),
+                    None => break 'outer,
                 }
             }
-        });
+            for _i in 0..peek {
+                match iter.peek() {
+                    Some(x) => tx.send(*x).unwrap(),
+                    None => break 'outer,
+                }
+            }
+        }
+    });
 
-        // Receive from the channel, and process.
-        let frequency_bands: Vec<f32> = iter::rangef(1000.0, 9000.0, 20.0).collect();
-        let mut cwt = alg::FftCpxFilterBank::new(
+    // Receive from the channel, and process.
+
+    let frequency_bands: Vec<_> = iter::rangef(
+        opt.min_radius * 1e-3,
+        opt.max_radius * 1e-3,
+        opt.radius_resolution * 1e-3,
+    )
+    .map(analysis::to_freq)
+    .collect();
+
+    if opt.debug {
+        println!("Lowest frequency: {}", frequency_bands.first().unwrap());
+        println!("Highest frequency: {}", frequency_bands.last().unwrap());
+        println!("Number of frequency bands: {}", frequency_bands.len());
+    }
+
+    let mut cwt: Box<dyn Cwt<std::vec::IntoIter<f32>>> = match opt.cwt {
+        CwtAlg::FftCpxFilterBank => box alg::FftCpxFilterBank::new(
             len,
             peek,
             |t| wavelets::soulti_cpx(t, 0.02),
             &frequency_bands,
             fs,
-        );
+        ),
+        CwtAlg::FftCpx => box alg::FftCpx::new(
+            |t| wavelets::soulti_cpx(t, 0.02),
+            [0., 50.],
+            &frequency_bands,
+            fs,
+        ),
+        CwtAlg::Fft => box alg::Fft::new(
+            |t| wavelets::soulti(t, 0.02),
+            [0., 50.],
+            &frequency_bands,
+            fs,
+        ),
+        CwtAlg::Standard => box alg::Standard::new(
+            |t| wavelets::soulti(t, 0.02),
+            [0., 50.],
+            &frequency_bands,
+            fs,
+        ),
+        CwtAlg::Simd => box alg::Simd::new(
+            |t| wavelets::soulti(t, 0.02),
+            [0., 50.],
+            &frequency_bands,
+            fs,
+        ),
+    };
 
-        for idx in 1.. { // Count up from one.
+    let pb = indicatif::ProgressBar::new(total_len as u64).with_style(
+        indicatif::ProgressStyle::default_bar()
+            .template("Analysing audio: {bar:40.cyan/blue} {percent:>3}% [eta: {eta}] [elasped: {elapsed}] {msg}")
+            .progress_chars("##-"),
+    );
 
-            // Receive a chunk of data
-            let mut chunk = Vec::with_capacity(len);
-            for _i in 0..len {
-                chunk.push(rx.recv().unwrap())
-            }
-
-            // Process chunk
-            let mut s = cwt.process_par(&mut chunk.into_iter());
-            // export_scaleogram(&s, idx);
-            analysis::threshold(&mut s, 100.);
-            let b = analysis::find_bubbles(&s,&frequency_bands,fs);
-            export_bubble_data(&b, idx);
+    // Count up from one.
+    for idx in 1.. {
+        pb.inc(take as u64);
+        if pb.position() > pb.length() {
+            pb.finish();
+            pb.set_message("✔");
+            break;
         }
 
-        t.join().unwrap();
+        // Receive a chunk of data
+        let mut chunk = Vec::with_capacity(len);
+        for _i in 0..len {
+            chunk.push(rx.recv().unwrap())
+        }
+
+        // Process chunk
+        let mut s = if opt.parallel {
+            cwt.process_par(&mut chunk.into_iter())
+        } else {
+            cwt.process(&mut chunk.into_iter())
+        };
+        if opt.scaleograms {
+            fileio::export_scaleogram(&s,opt.out_dir.as_path(), idx);
+        }
+        analysis::threshold(&mut s, opt.threshold);
+        let b = analysis::find_bubbles(&s, &frequency_bands, fs);
+        fileio::export_bubble_data(&b,opt.out_dir.as_path(), idx);
     }
+
+    t.join().unwrap();
 }

@@ -15,10 +15,20 @@ mod fft_cpx_filterbank;
 pub use self::fft_cpx_filterbank::FftCpxFilterBank;
 
 // Traits
-pub trait Cwt {
-    fn process(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>>;
-    fn process_par(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>>;
+pub trait Cwt<I> where I: Iterator<Item = f32> {
+    fn process(&mut self, sig: &mut I) -> Vec<Vec<f32>>;
+    fn process_par(&mut self, sig: &mut I) -> Vec<Vec<f32>>;
 }
+
+// pub enum CwtAlg {
+//     Fft(Fft),
+//     FftCpx(FftCpx),
+//     FftCpxFilterBank(FftCpxFilterBank),
+//     Simd(Simd),
+//     Standard(Standard),
+// }
+
+
 
 // Benchmarking tests
 #[cfg(test)]

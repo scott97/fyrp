@@ -42,6 +42,10 @@ pub fn threshold(s: &mut Vec<Vec<f32>>, min: f32) {
     }
 }
 
-fn to_radius(freq: f32) -> f32 {
+pub fn to_radius(freq: f32) -> f32 {
     (3f32 * 1.4f32 * 101.325f32).sqrt() / (freq * TAU)
+}
+
+pub fn to_freq(radius: f32) -> f32 {
+    (3f32 * 1.4f32 * 101.325f32).sqrt() / (radius * TAU)
 }

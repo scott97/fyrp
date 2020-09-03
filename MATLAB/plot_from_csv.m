@@ -1,7 +1,7 @@
 function plot_from_csv(idx,chunk_duration)
     % duration in milliseconds
     % Import cwt data
-    file = sprintf('scaleogram%d.csv', idx);
+    file = sprintf('../tmp/scaleogram%d.csv', idx);
     s = csvread(file);
 
     % Plot CWT

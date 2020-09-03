@@ -26,8 +26,8 @@ impl Simd {
     }
 }
 
-impl Cwt for Simd {
-    fn process(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
+impl<I: Iterator<Item = f32>> Cwt<I> for Simd {
+    fn process(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         let sig: Vec<f32> = sig.collect();
         self.frequencies
             .iter()
@@ -45,7 +45,7 @@ impl Cwt for Simd {
             })
             .collect()
     }
-    fn process_par(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
+    fn process_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         let sig: Vec<f32> = sig.collect();
         self.frequencies
             .par_iter()

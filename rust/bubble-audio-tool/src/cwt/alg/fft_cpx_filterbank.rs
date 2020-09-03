@@ -43,8 +43,8 @@ impl FftCpxFilterBank {
     }
 }
 
-impl Cwt for FftCpxFilterBank {
-    fn process(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
+impl<I: Iterator<Item = f32>> Cwt<I> for FftCpxFilterBank {
+    fn process(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         // Copy signal into a vector of complex numbers.
         let mut sig_t: Vec<Complex<f32>> = sig.map(Complex::from).collect();
         // Signal length.
@@ -77,7 +77,7 @@ impl Cwt for FftCpxFilterBank {
             })
             .collect()
     }
-    fn process_par(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
+    fn process_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         // Copy signal into a vector of complex numbers.
         let mut sig_t: Vec<Complex<f32>> = sig.map(Complex::from).collect();
         // Signal length.
@@ -91,7 +91,7 @@ impl Cwt for FftCpxFilterBank {
 
         // Convolution of signal with filters.
         self.filter_bank
-            .iter()
+            .par_iter()
             .map(|wvt| {
                 // Do convolution via element-wise multiplication.
                 let mut row_f: Vec<Complex<f32>> = vec![Complex::zero(); n];

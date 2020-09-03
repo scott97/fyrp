@@ -27,8 +27,8 @@ impl FftCpx {
     }
 }
 
-impl Cwt for FftCpx {
-    fn process(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
+impl<I: Iterator<Item = f32>> Cwt<I> for FftCpx {
+    fn process(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         let sig_cpx: Vec<Complex<f32>> = sig.map(Complex::from).collect();
 
         self.frequencies
@@ -50,7 +50,7 @@ impl Cwt for FftCpx {
             })
             .collect()
     }
-    fn process_par(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
+    fn process_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         let sig_cpx: Vec<Complex<f32>> = sig.map(Complex::from).collect();
 
         self.frequencies
