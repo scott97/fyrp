@@ -28,6 +28,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bubble-audio-tool"
+version = "0.1.0"
+dependencies = [
+ "approx",
+ "csv",
+ "exec_time",
+ "itertools",
+ "packed_simd",
+ "queues",
+ "rayon",
+ "rustfft",
+ "wav",
+]
+
+[[package]]
 name = "byteorder"
 version = "1.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -107,21 +122,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b2466559f260f48ad25fe6317b3c8dac77b5bdb5763ac7d9d6103530663bc90"
 dependencies = [
  "memchr",
-]
-
-[[package]]
-name = "cwt-cli"
-version = "0.1.0"
-dependencies = [
- "approx",
- "csv",
- "exec_time",
- "itertools",
- "packed_simd",
- "queues",
- "rayon",
- "rustfft",
- "wav",
 ]
 
 [[package]]

@@ -1,3 +1,3 @@
 #!/bin/bash
-cd rust/cwt-cli/
+cd rust/bubble-audio-tool/
 cargo +nightly build --release

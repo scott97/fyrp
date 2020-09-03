@@ -1,5 +1,5 @@
 [package]
-name = "cwt-cli"
+name = "bubble-audio-tool"
 version = "0.1.0"
 authors = ["Scott97 <scottbarnard5@gmail.com>"]
 edition = "2018"

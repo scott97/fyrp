@@ -1,2 +1,2 @@
 #!/bin/bash
-./rust/cwt-cli/target/release/cwt-cli
+./rust/bubble-audio-tool/target/release/bubble-audio-tool
