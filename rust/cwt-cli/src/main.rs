@@ -42,7 +42,7 @@ fn get_data() -> Option<(Vec<f32>, u32)> {
 }
 
 // Write scaleogram data to a csv file
-fn export_scaleogram(s: &Vec<Vec<f32>>, idx: usize) {
+fn export_scaleogram(s: &[Vec<f32>], idx: usize) {
     let name = format!("tmp/scaleogram{}.csv", idx);
 
     println!(
@@ -62,7 +62,7 @@ fn export_scaleogram(s: &Vec<Vec<f32>>, idx: usize) {
 }
 
 // Write bubble identification data to a csv file
-fn export_bubble_data(b: &Vec<(f32,f32)>, idx: usize) {
+fn export_bubble_data(b: &[(f32,f32)], idx: usize) {
     let name = format!("tmp/bubbles{}.csv", idx);
     let path = Path::new(&name);
 

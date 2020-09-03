@@ -44,7 +44,7 @@ impl PartialEq for ShiftablePoint {
 }
 
 pub fn mean_shift_cluster(
-    points: &Vec<Point>,
+    points: &[Point],
     window: fn((f32, f32), (f32, f32)) -> f32,
     max_iterations: u32,
 ) -> Vec<Point> {
@@ -86,7 +86,7 @@ pub fn mean_shift_cluster(
 
 fn shift_point(
     p: &mut ShiftablePoint,
-    points: &Vec<Point>,
+    points: &[Point],
     window: fn((f32, f32), (f32, f32)) -> f32,
 ) {
     let mut r = (0f32, 0f32); // result position, r.

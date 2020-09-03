@@ -3,7 +3,7 @@ use crate::mean_shift_clustering::mean_shift_cluster;
 use crate::mean_shift_clustering::Point;
 use std::f32::consts::TAU;
 
-pub fn find_bubbles(s: &Vec<Vec<f32>>, frequencies: &Vec<f32>, fs: u32) -> Vec<(f32, f32)> {
+pub fn find_bubbles(s: &[Vec<f32>], frequencies: &[f32], fs: u32) -> Vec<(f32, f32)> {
     let mut peaks: Vec<Point> = Vec::new();
     for row in 1..s.len() - 1 {
         for col in 1..s[0].len() - 1 {

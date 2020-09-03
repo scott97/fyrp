@@ -18,7 +18,7 @@ impl FftCpxFilterBank {
         chunk_len: usize,
         max_wvt_len: usize, // Length to discard.
         wvt_fn: fn(f32) -> Complex<f32>,
-        frequencies: &Vec<f32>,
+        frequencies: &[f32],
         fs: u32,
     ) -> FftCpxFilterBank {
         let filter_bank: Vec<Vec<Complex<f32>>> = frequencies

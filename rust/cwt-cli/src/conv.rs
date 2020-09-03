@@ -5,7 +5,7 @@ use rustfft::num_traits::Zero;
 use rustfft::FFTplanner;
 
 // do convolution the normal way
-pub fn conv(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
+pub fn conv(x: &[f32], h: &[f32]) -> Vec<f32> {
     let n = x.len() + h.len() - 1;
     let mut y: Vec<f32> = vec![0.0; n];
 
@@ -21,7 +21,7 @@ pub fn conv(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
 }
 
 // Very nearly works except for the last few elements which are sometimes left as zeros
-pub fn conv_simd(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
+pub fn conv_simd(x: &[f32], h: &[f32]) -> Vec<f32> {
     let lx = x.len();
     let lh = h.len();
     let lxch = lx - (lx % 16) + 16; // Chunked length of x, (rounded up to nearest 16).
@@ -46,7 +46,7 @@ pub fn conv_simd(x: &Vec<f32>, h: &Vec<f32>) -> Vec<f32> {
 }
 
 // do convolution using FFT
-pub fn conv_fft(sig: &Vec<f32>, fir: &Vec<f32>) -> Vec<f32> {
+pub fn conv_fft(sig: &[f32], fir: &[f32]) -> Vec<f32> {
     let n = sig.len() + fir.len() - 1;
 
     // Time domain

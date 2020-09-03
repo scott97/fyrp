@@ -15,7 +15,7 @@ impl FftCpx {
     pub fn new(
         wvt_fn: fn(f32) -> Complex<f32>,
         wvt_bounds: [f32; 2],
-        frequencies: &Vec<f32>,
+        frequencies: &[f32],
         fs: u32,
     ) -> FftCpx {
         FftCpx {
