@@ -1,32 +1,57 @@
 use rayon::prelude::*;
 
-pub type Point = (f32, f32, f32);
+#[derive(Debug)]
+pub struct Point {
+    pub position: (f32, f32),
+    pub value: f32,
+}
+
+impl Point {
+    fn from_shiftable_point(p: &ShiftablePoint) -> Point {
+        Point {
+            position: p.position,
+            value: p.value,
+        }
+    }
+}
+
+impl PartialEq for Point {
+    fn eq(&self, other: &Self) -> bool {
+        self.position == other.position && self.value == other.value
+    }
+}
 
 struct ShiftablePoint {
-    original_position: (f32, f32),
-    shiftable_position: (f32, f32),
+    position: (f32, f32),
+    group: (f32, f32),
     value: f32,
+}
+
+impl ShiftablePoint {
+    fn from_point(p: &Point) -> ShiftablePoint {
+        ShiftablePoint {
+            position: p.position,
+            group: p.position,
+            value: p.value,
+        }
+    }
 }
 
 impl PartialEq for ShiftablePoint {
     fn eq(&self, other: &Self) -> bool {
-        self.shiftable_position == other.shiftable_position
+        self.group == other.group
     }
 }
 
 pub fn mean_shift_cluster(
     points: &Vec<Point>,
-    window: fn(Point, Point) -> f32,
+    window: fn((f32, f32), (f32, f32)) -> f32,
     max_iterations: u32,
 ) -> Vec<Point> {
     // The points are copied into a new list of ShiftablePoint structs, which contain the original position and a mutable position.
     let mut shifted_points: Vec<_> = points
         .into_iter()
-        .map(|p| ShiftablePoint {
-            original_position: (p.0, p.1),
-            shiftable_position: (p.0, p.1),
-            value: p.2,
-        })
+        .map(|p| ShiftablePoint::from_point(p))
         .collect();
 
     // Each point is mean shifted, affecting only the mutable position.
@@ -53,27 +78,31 @@ pub fn mean_shift_cluster(
         }
     }
 
-    result.into_iter().map(|p| (p.original_position.0,p.original_position.1,p.value) ).collect()
+    result
+        .into_iter()
+        .map(|p| Point::from_shiftable_point(&p))
+        .collect()
 }
 
-fn shift_point(p: &mut ShiftablePoint, points: &Vec<Point>, window: fn(Point, Point) -> f32) {
-    let mut r = (0f32, 0f32); // result point, r.
+fn shift_point(
+    p: &mut ShiftablePoint,
+    points: &Vec<Point>,
+    window: fn((f32, f32), (f32, f32)) -> f32,
+) {
+    let mut r = (0f32, 0f32); // result position, r.
     let mut weight = 0f32;
     for k in points.into_iter() {
         // other point, k.
-        let w = window(
-            (p.shiftable_position.0, p.shiftable_position.1, p.value),
-            *k,
-        );
-        r.0 += w * k.0;
-        r.1 += w * k.1;
+        let w = window(p.group, k.position);
+        r.0 += w * k.position.0;
+        r.1 += w * k.position.1;
         weight += w;
     }
 
-    p.shiftable_position = (r.0 / weight, r.1 / weight);
+    p.group = (r.0 / weight, r.1 / weight);
 }
 
-pub fn circular_window(a: Point, b: Point, radius: f32) -> f32 {
+pub fn circular_window(a: (f32, f32), b: (f32, f32), radius: f32) -> f32 {
     let delta = (b.0 - a.0, b.1 - a.1);
     if delta.0 > radius || delta.1 > radius {
         0f32 // Early return optimisation.
@@ -84,7 +113,7 @@ pub fn circular_window(a: Point, b: Point, radius: f32) -> f32 {
     }
 }
 
-pub fn ellipse_window(a: Point, b: Point, axis: (f32, f32)) -> f32 {
+pub fn ellipse_window(a: (f32, f32), b: (f32, f32), axis: (f32, f32)) -> f32 {
     let delta = (b.0 - a.0, b.1 - a.1);
     if delta.0 > axis.0 || delta.1 > axis.1 {
         0f32 // Early return optimisation.
@@ -101,30 +130,64 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_clustering_1_iteration() {
-        // This example has points very close to each other. As a result, it only takes one iteration to converge.
-        let points = vec![
-            (1.10, 0.10, 1.0),
-            (1.05, 0.05, 2.0),
-            (4.02, 6.98, 2.0),
-            (4.08, 7.03, 1.0),
-            (3.95, 7.00, 1.0),
-            (1.05, -0.3, 1.0),
-        ];
-        let mut expected = vec![(1.05, 0.05), (4.02, 6.98)];
-        let mut result = mean_shift_cluster(&points, |a, b| circular_window(a, b, 1.5), 1);
+    fn test_circular_window() {
+        let centre = (0., 0.);
+        let radius = 5.0;
 
-        result.sort_by(|a, b| {
-            a.0.partial_cmp(&b.0)
+        #[rustfmt::skip]
+        let points = vec![
+            (0.00, 2.00),  (0.00, 4.99),  (2.00, 0.00),  (4.99, 0.00),   // Testing single numbers less than the radius.
+            (0.00, -2.00), (0.00, -4.99), (-2.00, 0.00), (-4.99, 0.00),  // Testing negative numbers.
+            (2.99, 3.99),  (-2.99, 3.99), (2.99, -3.99), (-2.99, -3.99), // Testing pairs less than the radius.
+            (0.00, 6.00),  (0.00, 9.00),  (6.00, 0.00),  (9.00, 0.00),   // Testing single numbers greater than the radius.
+            (0.00, -6.00), (0.00, -9.00), (-6.00, 0.00), (-9.00, 0.00),  // Testing negative numbers.
+            (4.00, 4.00),  (-4.00, 4.00), (4.00, -4.00), (-4.00, -4.00), // Testing pairs greater than the radius.
+        ];
+
+        let expected = vec![
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., // Inside the circle.
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., // Outside the circle.
+        ];
+
+        for i in 0..points.len() {
+            let actual = circular_window(centre, points[i], radius);
+            assert_eq!(expected[i], actual);
+        }
+    }
+
+    #[test]
+    fn test_clustering_1_iteration() {
+        #[rustfmt::skip]
+        let points = vec![
+            Point{ position: (1.10, 0.10), value: 1.0 },
+            Point{ position: (1.05, 0.05), value: 2.0 },
+            Point{ position: (4.02, 6.98), value: 2.0 },
+            Point{ position: (4.08, 7.03), value: 1.0 },
+            Point{ position: (3.95, 7.00), value: 1.0 },
+            Point{ position: (1.05, -0.3), value: 1.0 },
+        ];
+
+        #[rustfmt::skip]
+        let mut expected = vec![
+            Point{ position: (1.05, 0.05), value: 2.0 },
+            Point{ position: (4.02, 6.98), value: 2.0 },
+        ];
+
+        let mut actual = mean_shift_cluster(&points, |a, b| circular_window(a, b, 1.5), 1);
+
+        // Sort vectors so that they can be compared.
+        actual.sort_by(|a, b| {
+            a.position.0.partial_cmp(&b.position.0)
                 .unwrap()
-                .then(a.1.partial_cmp(&b.1).unwrap())
+                .then(a.position.1.partial_cmp(&b.position.1).unwrap())
         });
         expected.sort_by(|a, b| {
-            a.0.partial_cmp(&b.0)
+            a.position.0.partial_cmp(&b.position.0)
                 .unwrap()
-                .then(a.1.partial_cmp(&b.1).unwrap())
+                .then(a.position.1.partial_cmp(&b.position.1).unwrap())
         });
 
-        assert_eq!(expected, result)
+        assert_eq!(expected, actual);
+
     }
 }
