@@ -50,7 +50,7 @@ pub fn mean_shift_cluster(
 ) -> Vec<Point> {
     // The points are copied into a new list of ShiftablePoint structs, which contain the original position and a mutable position.
     let mut shifted_points: Vec<_> = points
-        .into_iter()
+        .iter()
         .map(|p| ShiftablePoint::from_point(p))
         .collect();
 
@@ -91,7 +91,7 @@ fn shift_point(
 ) {
     let mut r = (0f32, 0f32); // result position, r.
     let mut weight = 0f32;
-    for k in points.into_iter() {
+    for k in points.iter() {
         // other point, k.
         let w = window(p.group, k.position);
         r.0 += w * k.position.0;

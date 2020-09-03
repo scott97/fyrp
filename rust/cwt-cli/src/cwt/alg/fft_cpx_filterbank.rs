@@ -1,12 +1,12 @@
 use super::Cwt;
-use crate::iter::rangef;
-use itertools::Itertools;
+
+
 use rayon::prelude::*;
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use rustfft::FFTplanner;
 use rustfft::FFT;
-use std::sync::Arc;
+
 
 pub struct FftCpxFilterBank {
     filter_bank: Vec<Vec<Complex<f32>>>, // Calculated ahead of time and reused.
@@ -37,7 +37,7 @@ impl FftCpxFilterBank {
             .collect();
 
         FftCpxFilterBank {
-            filter_bank: filter_bank,
+            filter_bank,
             take: chunk_len - max_wvt_len,
         }
     }
@@ -46,7 +46,7 @@ impl FftCpxFilterBank {
 impl Cwt for FftCpxFilterBank {
     fn process(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
         // Copy signal into a vector of complex numbers.
-        let mut sig_t: Vec<Complex<f32>> = sig.map(|t| Complex::from(t)).collect();
+        let mut sig_t: Vec<Complex<f32>> = sig.map(Complex::from).collect();
         // Signal length.
         let n = sig_t.len();
         let n_recip = (n as f32).recip();
@@ -79,7 +79,7 @@ impl Cwt for FftCpxFilterBank {
     }
     fn process_par(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
         // Copy signal into a vector of complex numbers.
-        let mut sig_t: Vec<Complex<f32>> = sig.map(|t| Complex::from(t)).collect();
+        let mut sig_t: Vec<Complex<f32>> = sig.map(Complex::from).collect();
         // Signal length.
         let n = sig_t.len();
         let n_recip = (n as f32).recip();

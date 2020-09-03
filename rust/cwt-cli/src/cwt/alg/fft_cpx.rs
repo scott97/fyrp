@@ -19,8 +19,8 @@ impl FftCpx {
         fs: u32,
     ) -> FftCpx {
         FftCpx {
-            wvt_fn: wvt_fn,
-            wvt_bounds: wvt_bounds,
+            wvt_fn,
+            wvt_bounds,
             frequencies: frequencies.to_vec(), // Make a copy
             step: 1.0 / (fs as f32),
         }
@@ -29,7 +29,7 @@ impl FftCpx {
 
 impl Cwt for FftCpx {
     fn process(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
-        let sig_cpx: Vec<Complex<f32>> = sig.map(|x| Complex::from(x)).collect();
+        let sig_cpx: Vec<Complex<f32>> = sig.map(Complex::from).collect();
 
         self.frequencies
             .iter()
@@ -51,7 +51,7 @@ impl Cwt for FftCpx {
             .collect()
     }
     fn process_par(&mut self, sig: &mut impl Iterator<Item = f32>) -> Vec<Vec<f32>> {
-        let sig_cpx: Vec<Complex<f32>> = sig.map(|x| Complex::from(x)).collect();
+        let sig_cpx: Vec<Complex<f32>> = sig.map(Complex::from).collect();
 
         self.frequencies
             .par_iter()

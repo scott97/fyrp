@@ -19,7 +19,7 @@ pub fn find_bubbles(s: &Vec<Vec<f32>>, frequencies: &Vec<f32>, fs: u32) -> Vec<(
                 // let p = (freq, time, value);
                 let p = Point {
                     position: (freq, time),
-                    value: value,
+                    value,
                 };
                 peaks.push(p);
             }
@@ -33,7 +33,7 @@ pub fn find_bubbles(s: &Vec<Vec<f32>>, frequencies: &Vec<f32>, fs: u32) -> Vec<(
 }
 
 pub fn threshold(s: &mut Vec<Vec<f32>>, min: f32) {
-    for row in s.into_iter() {
+    for row in s.iter_mut() {
         for val in row {
             if *val < min {
                 *val = 0.;

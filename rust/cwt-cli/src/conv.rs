@@ -53,12 +53,12 @@ pub fn conv_fft(sig: &Vec<f32>, fir: &Vec<f32>) -> Vec<f32> {
     let mut tsig: Vec<Complex<f32>> = sig
         .iter()
         .pad_using(n, |_i| &0.0)
-        .map(|t| Complex::from(t))
+        .map(Complex::from)
         .collect();
     let mut tfir: Vec<Complex<f32>> = fir
         .iter()
         .pad_using(n, |_i| &0.0)
-        .map(|t| Complex::from(t))
+        .map(Complex::from)
         .collect();
 
     // Frequency domain

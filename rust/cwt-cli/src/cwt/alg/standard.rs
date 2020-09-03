@@ -18,8 +18,8 @@ impl Standard {
         fs: u32,
     ) -> Standard {
         Standard {
-            wvt_fn: wvt_fn,
-            wvt_bounds: wvt_bounds,
+            wvt_fn,
+            wvt_bounds,
             frequencies: frequencies.to_vec(), // Make a copy
             step: 1.0 / (fs as f32),
         }

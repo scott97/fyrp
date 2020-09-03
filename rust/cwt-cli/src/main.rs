@@ -54,7 +54,7 @@ fn export_scaleogram(s: &Vec<Vec<f32>>, idx: usize) {
 
     let path = Path::new(&name);
     let mut wtr = csv::Writer::from_path(path).unwrap();
-    for row in s.into_iter() {
+    for row in s.iter() {
         let text_vec: Vec<String> = row.iter().map(|n| format!("{:e}", n)).collect(); // Use sci notation
         wtr.write_record(&text_vec).unwrap();
     }
@@ -72,7 +72,7 @@ fn export_bubble_data(b: &Vec<(f32,f32)>, idx: usize) {
         name
     );
 
-    if b.len() > 0 {
+    if !b.is_empty() {
         let mut wtr = csv::Writer::from_path(path).unwrap();
         let text_vec: Vec<String> = b.iter().map(|(rad,_)| format!("{:e}",rad)).collect();
         wtr.write_record(&text_vec).unwrap();
@@ -80,7 +80,7 @@ fn export_bubble_data(b: &Vec<(f32,f32)>, idx: usize) {
         wtr.write_record(&text_vec).unwrap();
         wtr.flush().unwrap();
     } else {
-        let mut file = File::create(name).unwrap();
+        File::create(name).unwrap();
     }
 }
 
@@ -136,7 +136,7 @@ fn main() {
 
             // Receive a chunk of data
             let mut chunk = Vec::with_capacity(len);
-            for i in 0..len {
+            for _i in 0..len {
                 chunk.push(rx.recv().unwrap())
             }
 

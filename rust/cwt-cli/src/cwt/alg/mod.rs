@@ -28,8 +28,8 @@ mod tests {
     use crate::cwt::wavelets;
     use crate::iter;
     use crate::get_data;
-    use std::fs::File;
-    use std::path::Path;
+    
+    
     use test::Bencher;
 
 
