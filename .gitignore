@@ -1,2 +1,6 @@
 /rust/*/target
 /tmp
+teensy.exe
+**.hex
+**.wav
+**TODO
