@@ -6,6 +6,7 @@ use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use rustfft::FFTplanner;
 use rustfft::FFT;
+use crate::cwt::wavelets::WaveletFn;
 
 
 pub struct FftCpxFilterBank {
@@ -17,7 +18,7 @@ impl FftCpxFilterBank {
     pub fn new(
         chunk_len: usize,
         max_wvt_len: usize, // Length to discard.
-        wvt_fn: fn(f32) -> Complex<f32>,
+        wvt: WaveletFn,
         frequencies: &[f32],
         fs: u32,
     ) -> FftCpxFilterBank {
@@ -26,7 +27,7 @@ impl FftCpxFilterBank {
             .map(|f| {
                 let t = (0..chunk_len).map(|x| x as f32 / fs as f32);
                 let mut wvt_t: Vec<Complex<f32>> =
-                    t.map(|t| f.sqrt() * wvt_fn(t * f)).rev().collect();
+                    t.map(|t| f.sqrt() * wvt.func(t * f)).rev().collect();
 
                 let mut wvt_f: Vec<Complex<f32>> = vec![Complex::zero(); chunk_len];
                 let fft = FFTplanner::<f32>::new(false).plan_fft(chunk_len);

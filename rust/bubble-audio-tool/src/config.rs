@@ -13,6 +13,14 @@ arg_enum! {
     }
 }
 
+arg_enum! {
+    #[derive(Debug, Clone)]
+    pub enum Wavelet {
+        Soulti,
+        Morlet,
+    }
+}
+
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(name = "Bubble audio tool", about = "A tool for analysing hydrophone data to identify bubbles.")]
 pub struct Opt {
@@ -45,11 +53,11 @@ pub struct Opt {
     pub radius_resolution: f32,
 
     /// Minimum radius (mm)
-    #[structopt(long, default_value = "0.30")]
+    #[structopt(short="m",long, default_value = "0.30")]
     pub min_radius: f32,
 
     /// Maximum radius (mm)
-    #[structopt(long, default_value = "3.00")]
+    #[structopt(short="M",long, default_value = "3.00")]
     pub max_radius: f32,
 
     /// Disable parallel processing of data
@@ -60,7 +68,11 @@ pub struct Opt {
     #[structopt(short, long)]
     pub scaleograms: bool,
 
-    /// Zeta used in wavelet function
-    #[structopt(short, long, default_value="0.02")]
+    /// Wavelet function
+    #[structopt(short,long,possible_values = &Wavelet::variants(), case_insensitive = true, default_value = "Soulti")]
+    pub wavelet: Wavelet,
+
+    /// Zeta is used by the soulti wavelet function
+    #[structopt(short, long, default_value="0.02", required_if("wavelet", "Soulti"))]
     pub zeta: f32,
 }

@@ -23,6 +23,7 @@ use config::*;
 use cwt::alg;
 use cwt::alg::Cwt;
 use cwt::wavelets;
+use cwt::wavelets::WaveletFn;
 
 
 
@@ -99,16 +100,21 @@ fn main() {
         println!("Number of frequency bands: {}", frequency_bands.len());
     }
 
+    let wvt = match opt.wavelet {
+        Wavelet::Soulti => WaveletFn::Soulti(wavelets::Soulti::new(opt.zeta)),
+        Wavelet::Morlet => WaveletFn::Morlet(wavelets::Morlet::new()),
+    };
+
     let mut cwt: Box<dyn Cwt<std::vec::IntoIter<f32>>> = match opt.cwt {
         CwtAlg::FftCpxFilterBank => box alg::FftCpxFilterBank::new(
             len,
             peek,
-            |t| wavelets::soulti_cpx(t, 0.02),
+            wvt,
             &frequency_bands,
             fs,
         ),
         CwtAlg::FftCpx => box alg::FftCpx::new(
-            |t| wavelets::soulti_cpx(t, 0.02),
+            wvt,
             [0., 50.],
             &frequency_bands,
             fs,
