@@ -18,27 +18,17 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use structopt::StructOpt;
-
-use config::*;
-use cwt::alg;
-use cwt::alg::Cwt;
-use cwt::wavelets;
-use cwt::wavelets::WaveletFn;
-
-
-
-use winapi_util::console::{Console, Color, Intense};
-
+use winapi_util::console::{Color, Console, Intense};
 
 fn main() {
-    let opt = Opt::from_args();
+    let opt = config::Opt::from_args();
 
     if opt.debug {
         let mut con = Console::stdout().unwrap();
         con.fg(Intense::Yes, Color::Magenta).unwrap();
         println!("Debug mode enabled.");
         con.reset().unwrap();
-        println!("Configuration: {:#?}",&opt);
+        println!("Configuration: {:#?}", &opt);
     }
 
     let (d, fs) = fileio::get_data(opt.input.as_path()).unwrap();
@@ -85,65 +75,13 @@ fn main() {
     });
 
     // Receive from the channel, and process.
-
-    let frequency_bands: Vec<_> = iter::rangef(
-        opt.min_radius * 1e-3,
-        opt.max_radius * 1e-3,
-        opt.radius_resolution * 1e-3,
-    )
-    .map(analysis::to_freq)
-    .collect();
-
-    if opt.debug {
-        println!("Lowest frequency: {}", frequency_bands.first().unwrap());
-        println!("Highest frequency: {}", frequency_bands.last().unwrap());
-        println!("Number of frequency bands: {}", frequency_bands.len());
-    }
-
-    let wvt = match opt.wavelet {
-        Wavelet::Soulti => WaveletFn::Soulti(wavelets::Soulti::new(opt.zeta)),
-        Wavelet::Morlet => WaveletFn::Morlet(wavelets::Morlet::new()),
-    };
-
-    let mut cwt: Box<dyn Cwt<std::vec::IntoIter<f32>>> = match opt.cwt {
-        CwtAlg::FftCpxFilterBank => box alg::FftCpxFilterBank::new(
-            len,
-            peek,
-            wvt,
-            &frequency_bands,
-            fs,
-        ),
-        CwtAlg::FftCpx => box alg::FftCpx::new(
-            wvt,
-            [0., 50.],
-            &frequency_bands,
-            fs,
-        ),
-        CwtAlg::Fft => box alg::Fft::new(
-            |t| wavelets::soulti(t, 0.02),
-            [0., 50.],
-            &frequency_bands,
-            fs,
-        ),
-        CwtAlg::Standard => box alg::Standard::new(
-            |t| wavelets::soulti(t, 0.02),
-            [0., 50.],
-            &frequency_bands,
-            fs,
-        ),
-        CwtAlg::Simd => box alg::Simd::new(
-            |t| wavelets::soulti(t, 0.02),
-            [0., 50.],
-            &frequency_bands,
-            fs,
-        ),
-    };
-
     let pb = indicatif::ProgressBar::new(total_len as u64).with_style(
         indicatif::ProgressStyle::default_bar()
             .template("Analysing audio: {bar:40.cyan/blue} {percent:>3}% [eta: {eta}] [elasped: {elapsed}] {msg}")
             .progress_chars("##-"),
     );
+
+    let mut identifier = analysis::BubbleIdentifier::new(&opt, fs);
 
     // Count up from one.
     for idx in 1.. {
@@ -161,17 +99,8 @@ fn main() {
         }
 
         // Process chunk
-        let mut s = if opt.parallel {
-            cwt.process_par(&mut chunk.into_iter())
-        } else {
-            cwt.process(&mut chunk.into_iter())
-        };
-        if opt.scaleograms {
-            fileio::export_scaleogram(&s,opt.out_dir.as_path(), idx);
-        }
-        analysis::threshold(&mut s, opt.threshold);
-        let b = analysis::find_bubbles(&s, &frequency_bands, fs);
-        fileio::export_bubble_data(&b,opt.out_dir.as_path(), idx);
+        let b = identifier.process(chunk);
+        fileio::export_bubble_data(&b, opt.out_dir.as_path(), idx);
     }
 
     t.join().unwrap();

@@ -1,7 +1,83 @@
+use crate::config;
 use crate::mean_shift_clustering::ellipse_window;
 use crate::mean_shift_clustering::mean_shift_cluster;
 use crate::mean_shift_clustering::Point;
 use std::f32::consts::TAU;
+
+use crate::cwt::alg;
+use crate::cwt::alg::Cwt;
+use crate::cwt::wavelets;
+use crate::cwt::wavelets::WaveletFn;
+use crate::iter;
+
+pub struct BubbleIdentifier {
+    cwt: Box<dyn Cwt<std::vec::IntoIter<f32>>>,
+    parallel: bool,
+    threshold: f32,
+    frequencies: Vec<f32>,
+    fs: u32,
+}
+
+impl BubbleIdentifier {
+    pub fn new(opt: &config::Opt, fs: u32) -> Self {
+        const PEAK_FINDING_OVERLAP: usize = 2;
+        let take = (opt.segment_size * 1e-3 * fs as f32) as usize;
+        let peek = (50e-3 * fs as f32) as usize + PEAK_FINDING_OVERLAP;
+        let len = take + peek;
+
+        let frequencies: Vec<_> = iter::rangef(
+            opt.min_radius * 1e-3,
+            opt.max_radius * 1e-3,
+            opt.radius_resolution * 1e-3,
+        )
+        .map(to_freq)
+        .collect();
+
+        if opt.debug {
+            println!("Lowest frequency: {}", frequencies.first().unwrap());
+            println!("Highest frequency: {}", frequencies.last().unwrap());
+            println!("Number of frequency bands: {}", frequencies.len());
+        }
+
+        let wvt = match opt.wavelet {
+            config::Wavelet::Soulti => WaveletFn::Soulti(wavelets::Soulti::new(opt.zeta)),
+            config::Wavelet::Morlet => WaveletFn::Morlet(wavelets::Morlet::new()),
+        };
+        let cwt: Box<dyn Cwt<std::vec::IntoIter<f32>>> = match opt.cwt {
+            config::CwtAlg::FftCpxFilterBank => {
+                box alg::FftCpxFilterBank::new(len, peek, wvt, &frequencies, fs)
+            }
+            config::CwtAlg::FftCpx => box alg::FftCpx::new(wvt, [0., 50.], &frequencies, fs),
+            config::CwtAlg::Fft => {
+                box alg::Fft::new(|t| wavelets::soulti(t, 0.02), [0., 50.], &frequencies, fs)
+            }
+            config::CwtAlg::Standard => {
+                box alg::Standard::new(|t| wavelets::soulti(t, 0.02), [0., 50.], &frequencies, fs)
+            }
+            config::CwtAlg::Simd => {
+                box alg::Simd::new(|t| wavelets::soulti(t, 0.02), [0., 50.], &frequencies, fs)
+            }
+        };
+
+        BubbleIdentifier {
+            cwt,
+            parallel: opt.parallel,
+            threshold: opt.threshold,
+            frequencies,
+            fs,
+        }
+    }
+
+    pub fn process(&mut self, chunk: Vec<f32>) -> Vec<(f32, f32)> {
+        let mut s = if self.parallel {
+            self.cwt.process_par(&mut chunk.into_iter())
+        } else {
+            self.cwt.process(&mut chunk.into_iter())
+        };
+        threshold(&mut s, self.threshold);
+        find_bubbles(&s, &self.frequencies, self.fs)
+    }
+}
 
 pub fn find_bubbles(s: &[Vec<f32>], frequencies: &[f32], fs: u32) -> Vec<(f32, f32)> {
     let mut peaks: Vec<Point> = Vec::new();
@@ -13,10 +89,9 @@ pub fn find_bubbles(s: &[Vec<f32>], frequencies: &[f32], fs: u32) -> Vec<(f32, f
                 && s[row][col] > s[row][col + 1]
                 && s[row][col] > s[row][col - 1]
             {
-                let freq = frequencies[row] * 1e-3; // kHz
-                let time = (col as f32) / (fs as f32) * 1e3; // ms
+                let freq = frequencies[row] * 1e-3; // kHz.
+                let time = (col as f32) / (fs as f32) * 1e3; // ms.
                 let value = s[row][col];
-                // let p = (freq, time, value);
                 let p = Point {
                     position: (freq, time),
                     value,
