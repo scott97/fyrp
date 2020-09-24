@@ -13,6 +13,7 @@ mod cwt;
 mod fileio;
 mod iter;
 mod mean_shift_clustering;
+mod summary;
 
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
@@ -82,6 +83,7 @@ fn main() {
     );
 
     let mut identifier = analysis::BubbleIdentifier::new(&opt, fs);
+    let mut joiner = summary::Joiner::new(&opt);
 
     // Count up from one.
     for idx in 1.. {
@@ -100,8 +102,10 @@ fn main() {
 
         // Process chunk
         let b = identifier.process(chunk);
-        fileio::export_bubble_data(&b, opt.out_dir.as_path(), idx);
+        joiner.append(idx, &b);
     }
+
+    joiner.summarise();
 
     t.join().unwrap();
 }
