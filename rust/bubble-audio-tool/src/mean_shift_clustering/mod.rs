@@ -1,5 +1,6 @@
 use rayon::prelude::*;
 use crate::config;
+use std::f32::consts::TAU;
 
 #[derive(Debug)]
 pub struct Point {
@@ -55,11 +56,13 @@ impl MeanShiftClustering {
 
         match opt.clustering_window {
             config::ClusteringWindow::Circular => assert_eq!(bw.len(),1),
+            config::ClusteringWindow::Gaussian => assert_eq!(bw.len(),1),
             _ => assert_eq!(bw.len(),2),
         };
 
         let window: Box<dyn WindowFn> = match opt.clustering_window {
             config::ClusteringWindow::Circular => box move|a, b| circular_window(a, b, bw[0]),
+            config::ClusteringWindow::Gaussian => box move|a, b| gaussian_window(a, b, bw[0]),
             _ => box move|a, b| ellipse_window(a, b, (bw[0], bw[1])),
         };
 
@@ -152,73 +155,107 @@ pub fn ellipse_window(a: (f32, f32), b: (f32, f32), axis: (f32, f32)) -> f32 {
     }
 }
 
+pub fn gaussian_window(a: (f32, f32), b: (f32, f32), bandwidth: f32) -> f32 {
+    let delta = (b.0 - a.0, b.1 - a.1);
+    let dist_sq = delta.0.powi(2) + delta.1.powi(2);
+
+    (TAU * bandwidth).sqrt().recip() * (-dist_sq / (2. * bandwidth.powi(2) )).exp()
+
+}
+
 // Unit tests
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-//     #[test]
-//     fn test_circular_window() {
-//         let centre = (0., 0.);
-//         let radius = 5.0;
+    #[test]
+    fn test_circular_window() {
+        let centre = (0., 0.);
+        let radius = 5.0;
 
-//         #[rustfmt::skip]
-//         let points = vec![
-//             (0.00, 2.00),  (0.00, 4.99),  (2.00, 0.00),  (4.99, 0.00),   // Testing single numbers less than the radius.
-//             (0.00, -2.00), (0.00, -4.99), (-2.00, 0.00), (-4.99, 0.00),  // Testing negative numbers.
-//             (2.99, 3.99),  (-2.99, 3.99), (2.99, -3.99), (-2.99, -3.99), // Testing pairs less than the radius.
-//             (0.00, 6.00),  (0.00, 9.00),  (6.00, 0.00),  (9.00, 0.00),   // Testing single numbers greater than the radius.
-//             (0.00, -6.00), (0.00, -9.00), (-6.00, 0.00), (-9.00, 0.00),  // Testing negative numbers.
-//             (4.00, 4.00),  (-4.00, 4.00), (4.00, -4.00), (-4.00, -4.00), // Testing pairs greater than the radius.
-//         ];
+        #[rustfmt::skip]
+        let points = vec![
+            (0.00, 2.00),  (0.00, 4.99),  (2.00, 0.00),  (4.99, 0.00),   // Testing single numbers less than the radius.
+            (0.00, -2.00), (0.00, -4.99), (-2.00, 0.00), (-4.99, 0.00),  // Testing negative numbers.
+            (2.99, 3.99),  (-2.99, 3.99), (2.99, -3.99), (-2.99, -3.99), // Testing pairs less than the radius.
+            (0.00, 6.00),  (0.00, 9.00),  (6.00, 0.00),  (9.00, 0.00),   // Testing single numbers greater than the radius.
+            (0.00, -6.00), (0.00, -9.00), (-6.00, 0.00), (-9.00, 0.00),  // Testing negative numbers.
+            (4.00, 4.00),  (-4.00, 4.00), (4.00, -4.00), (-4.00, -4.00), // Testing pairs greater than the radius.
+        ];
 
-//         let expected = vec![
-//             1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., // Inside the circle.
-//             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., // Outside the circle.
-//         ];
+        let expected = vec![
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., // Inside the circle.
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., // Outside the circle.
+        ];
 
-//         for i in 0..points.len() {
-//             let actual = circular_window(centre, points[i], radius);
-//             assert_eq!(expected[i], actual);
-//         }
-//     }
+        for i in 0..points.len() {
+            let actual = circular_window(centre, points[i], radius);
+            assert_eq!(expected[i], actual);
+        }
+    }
 
-//     #[test]
-//     fn test_clustering_1_iteration() {
-//         #[rustfmt::skip]
-//         let points = vec![
-//             Point{ position: (1.10, 0.10), value: 1.0 },
-//             Point{ position: (1.05, 0.05), value: 2.0 },
-//             Point{ position: (4.02, 6.98), value: 2.0 },
-//             Point{ position: (4.08, 7.03), value: 1.0 },
-//             Point{ position: (3.95, 7.00), value: 1.0 },
-//             Point{ position: (1.05, -0.3), value: 1.0 },
-//         ];
+    #[test]
+    fn test_gaussian_window() {
+        let centre = (0., 0.);
+        let bandwidth = 2.0;
 
-//         #[rustfmt::skip]
-//         let mut expected = vec![
-//             Point{ position: (1.05, 0.05), value: 2.0 },
-//             Point{ position: (4.02, 6.98), value: 2.0 },
-//         ];
+        #[rustfmt::skip]
+        let points = vec![
+            ( 0.00, 2.00),
+            (-2.00, 0.00),
+            ( 0.00, 5.00),
+            ( 3.00, 4.00), 
+        ];
 
-//         let mut actual = mean_shift_cluster(&points, |a, b| circular_window(a, b, 1.5), 1);
+        let expected = vec![
+            1.7109913e-1,
+            1.7109913e-1,
+            1.2394380e-2,
+            1.2394380e-2,
+        ];
 
-//         // Sort vectors so that they can be compared.
-//         actual.sort_by(|a, b| {
-//             a.position
-//                 .0
-//                 .partial_cmp(&b.position.0)
-//                 .unwrap()
-//                 .then(a.position.1.partial_cmp(&b.position.1).unwrap())
-//         });
-//         expected.sort_by(|a, b| {
-//             a.position
-//                 .0
-//                 .partial_cmp(&b.position.0)
-//                 .unwrap()
-//                 .then(a.position.1.partial_cmp(&b.position.1).unwrap())
-//         });
+        for i in 0..points.len() {
+            let actual = gaussian_window(centre, points[i], bandwidth);
+            assert_eq!(expected[i], actual);
+        }
+    }
 
-//         assert_eq!(expected, actual);
-//     }
-// }
+    // #[test]
+    // fn test_clustering_1_iteration() {
+    //     #[rustfmt::skip]
+    //     let points = vec![
+    //         Point{ position: (1.10, 0.10), value: 1.0 },
+    //         Point{ position: (1.05, 0.05), value: 2.0 },
+    //         Point{ position: (4.02, 6.98), value: 2.0 },
+    //         Point{ position: (4.08, 7.03), value: 1.0 },
+    //         Point{ position: (3.95, 7.00), value: 1.0 },
+    //         Point{ position: (1.05, -0.3), value: 1.0 },
+    //     ];
+
+    //     #[rustfmt::skip]
+    //     let mut expected = vec![
+    //         Point{ position: (1.05, 0.05), value: 2.0 },
+    //         Point{ position: (4.02, 6.98), value: 2.0 },
+    //     ];
+
+    //     let mut actual = mean_shift_cluster(&points, |a, b| circular_window(a, b, 1.5), 1);
+
+    //     // Sort vectors so that they can be compared.
+    //     actual.sort_by(|a, b| {
+    //         a.position
+    //             .0
+    //             .partial_cmp(&b.position.0)
+    //             .unwrap()
+    //             .then(a.position.1.partial_cmp(&b.position.1).unwrap())
+    //     });
+    //     expected.sort_by(|a, b| {
+    //         a.position
+    //             .0
+    //             .partial_cmp(&b.position.0)
+    //             .unwrap()
+    //             .then(a.position.1.partial_cmp(&b.position.1).unwrap())
+    //     });
+
+    //     assert_eq!(expected, actual);
+    // }
+}
