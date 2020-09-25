@@ -153,72 +153,72 @@ pub fn ellipse_window(a: (f32, f32), b: (f32, f32), axis: (f32, f32)) -> f32 {
 }
 
 // Unit tests
-#[cfg(test)]
-mod tests {
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-    #[test]
-    fn test_circular_window() {
-        let centre = (0., 0.);
-        let radius = 5.0;
+//     #[test]
+//     fn test_circular_window() {
+//         let centre = (0., 0.);
+//         let radius = 5.0;
 
-        #[rustfmt::skip]
-        let points = vec![
-            (0.00, 2.00),  (0.00, 4.99),  (2.00, 0.00),  (4.99, 0.00),   // Testing single numbers less than the radius.
-            (0.00, -2.00), (0.00, -4.99), (-2.00, 0.00), (-4.99, 0.00),  // Testing negative numbers.
-            (2.99, 3.99),  (-2.99, 3.99), (2.99, -3.99), (-2.99, -3.99), // Testing pairs less than the radius.
-            (0.00, 6.00),  (0.00, 9.00),  (6.00, 0.00),  (9.00, 0.00),   // Testing single numbers greater than the radius.
-            (0.00, -6.00), (0.00, -9.00), (-6.00, 0.00), (-9.00, 0.00),  // Testing negative numbers.
-            (4.00, 4.00),  (-4.00, 4.00), (4.00, -4.00), (-4.00, -4.00), // Testing pairs greater than the radius.
-        ];
+//         #[rustfmt::skip]
+//         let points = vec![
+//             (0.00, 2.00),  (0.00, 4.99),  (2.00, 0.00),  (4.99, 0.00),   // Testing single numbers less than the radius.
+//             (0.00, -2.00), (0.00, -4.99), (-2.00, 0.00), (-4.99, 0.00),  // Testing negative numbers.
+//             (2.99, 3.99),  (-2.99, 3.99), (2.99, -3.99), (-2.99, -3.99), // Testing pairs less than the radius.
+//             (0.00, 6.00),  (0.00, 9.00),  (6.00, 0.00),  (9.00, 0.00),   // Testing single numbers greater than the radius.
+//             (0.00, -6.00), (0.00, -9.00), (-6.00, 0.00), (-9.00, 0.00),  // Testing negative numbers.
+//             (4.00, 4.00),  (-4.00, 4.00), (4.00, -4.00), (-4.00, -4.00), // Testing pairs greater than the radius.
+//         ];
 
-        let expected = vec![
-            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., // Inside the circle.
-            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., // Outside the circle.
-        ];
+//         let expected = vec![
+//             1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., // Inside the circle.
+//             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., // Outside the circle.
+//         ];
 
-        for i in 0..points.len() {
-            let actual = circular_window(centre, points[i], radius);
-            assert_eq!(expected[i], actual);
-        }
-    }
+//         for i in 0..points.len() {
+//             let actual = circular_window(centre, points[i], radius);
+//             assert_eq!(expected[i], actual);
+//         }
+//     }
 
-    #[test]
-    fn test_clustering_1_iteration() {
-        #[rustfmt::skip]
-        let points = vec![
-            Point{ position: (1.10, 0.10), value: 1.0 },
-            Point{ position: (1.05, 0.05), value: 2.0 },
-            Point{ position: (4.02, 6.98), value: 2.0 },
-            Point{ position: (4.08, 7.03), value: 1.0 },
-            Point{ position: (3.95, 7.00), value: 1.0 },
-            Point{ position: (1.05, -0.3), value: 1.0 },
-        ];
+//     #[test]
+//     fn test_clustering_1_iteration() {
+//         #[rustfmt::skip]
+//         let points = vec![
+//             Point{ position: (1.10, 0.10), value: 1.0 },
+//             Point{ position: (1.05, 0.05), value: 2.0 },
+//             Point{ position: (4.02, 6.98), value: 2.0 },
+//             Point{ position: (4.08, 7.03), value: 1.0 },
+//             Point{ position: (3.95, 7.00), value: 1.0 },
+//             Point{ position: (1.05, -0.3), value: 1.0 },
+//         ];
 
-        #[rustfmt::skip]
-        let mut expected = vec![
-            Point{ position: (1.05, 0.05), value: 2.0 },
-            Point{ position: (4.02, 6.98), value: 2.0 },
-        ];
+//         #[rustfmt::skip]
+//         let mut expected = vec![
+//             Point{ position: (1.05, 0.05), value: 2.0 },
+//             Point{ position: (4.02, 6.98), value: 2.0 },
+//         ];
 
-        let mut actual = mean_shift_cluster(&points, |a, b| circular_window(a, b, 1.5), 1);
+//         let mut actual = mean_shift_cluster(&points, |a, b| circular_window(a, b, 1.5), 1);
 
-        // Sort vectors so that they can be compared.
-        actual.sort_by(|a, b| {
-            a.position
-                .0
-                .partial_cmp(&b.position.0)
-                .unwrap()
-                .then(a.position.1.partial_cmp(&b.position.1).unwrap())
-        });
-        expected.sort_by(|a, b| {
-            a.position
-                .0
-                .partial_cmp(&b.position.0)
-                .unwrap()
-                .then(a.position.1.partial_cmp(&b.position.1).unwrap())
-        });
+//         // Sort vectors so that they can be compared.
+//         actual.sort_by(|a, b| {
+//             a.position
+//                 .0
+//                 .partial_cmp(&b.position.0)
+//                 .unwrap()
+//                 .then(a.position.1.partial_cmp(&b.position.1).unwrap())
+//         });
+//         expected.sort_by(|a, b| {
+//             a.position
+//                 .0
+//                 .partial_cmp(&b.position.0)
+//                 .unwrap()
+//                 .then(a.position.1.partial_cmp(&b.position.1).unwrap())
+//         });
 
-        assert_eq!(expected, actual);
-    }
-}
+//         assert_eq!(expected, actual);
+//     }
+// }

@@ -2,5 +2,5 @@
 /tmp
 teensy.exe
 **.hex
-**.wav
 **TODO
+/rust/*/test_data/out/*

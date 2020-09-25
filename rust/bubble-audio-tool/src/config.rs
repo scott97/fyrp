@@ -89,7 +89,7 @@ pub struct Opt {
     /// Clustering Window Maximum Iterations
     /// Choose a value which is sufficient for clustering to work.
     /// Higher values give slower performance.
-    #[structopt(short="i", long, default_value = "15")]
+    #[structopt(short="i", long, default_value = "20")]
     pub max_iterations: u32,
 
     /// Export Scaleograms

@@ -15,6 +15,7 @@ mod fileio;
 mod iter;
 mod mean_shift_clustering;
 mod summary;
+mod integration_tests;
 
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
@@ -32,6 +33,12 @@ fn main() {
         con.reset().unwrap();
         println!("Configuration: {:#?}", &opt);
     }
+
+   run(&opt);
+}
+
+fn run(opt: &config::Opt) {
+    
 
     let (d, fs) = fileio::get_data(opt.input.as_path()).unwrap();
 
