@@ -1,5 +1,6 @@
 #![feature(test)] // for benchmarks.
 #![feature(box_syntax)] // for box.
+#![feature(trait_alias)] // for trait _ = _.
 
 extern crate test; // for benchmarks.
 

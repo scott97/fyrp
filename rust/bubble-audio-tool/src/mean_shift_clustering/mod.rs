@@ -1,4 +1,5 @@
 use rayon::prelude::*;
+use crate::config;
 
 #[derive(Debug)]
 pub struct Point {
@@ -43,65 +44,91 @@ impl PartialEq for ShiftablePoint {
     }
 }
 
-pub fn mean_shift_cluster(
-    points: &[Point],
-    window: fn((f32, f32), (f32, f32)) -> f32,
+pub struct MeanShiftClustering {
+    window: Box<dyn WindowFn>,
     max_iterations: u32,
-) -> Vec<Point> {
-    // The points are copied into a new list of ShiftablePoint structs, which contain the original position and a mutable position.
-    let mut shifted_points: Vec<_> = points
-        .iter()
-        .map(|p| ShiftablePoint::from_point(p))
-        .collect();
+}
 
-    // Each point is mean shifted, affecting only the mutable position.
-    for _ in 0..max_iterations {
-        shifted_points
-            .par_iter_mut()
-            .for_each(|mut p| shift_point(&mut p, &points, window))
-    }
+impl MeanShiftClustering {
+    pub fn new(opt: &config::Opt) -> Self {
+        let bw = opt.clustering_window_bandwidths.to_vec();
 
-    // The points are split into groups, based on the shifted position.
-    // The highest intensity point in each group is selected, and the original position is appended to the list of results.
-    let mut result: Vec<ShiftablePoint> = Vec::new();
+        match opt.clustering_window {
+            config::ClusteringWindow::Circular => assert_eq!(bw.len(),1),
+            _ => assert_eq!(bw.len(),2),
+        };
 
-    for p in shifted_points {
-        if !result.contains(&p) {
-            result.push(p)
-        } else {
-            let idx = result
-                .iter()
-                .position(|other| *other == p && other.value < p.value);
-            if let Some(i) = idx {
-                result[i] = p;
-            }
+        let window: Box<dyn WindowFn> = match opt.clustering_window {
+            config::ClusteringWindow::Circular => box move|a, b| circular_window(a, b, bw[0]),
+            _ => box move|a, b| ellipse_window(a, b, (bw[0], bw[1])),
+        };
+
+        let max_iterations = opt.max_iterations;
+
+        MeanShiftClustering {
+            window,
+            max_iterations,
         }
     }
 
-    result
-        .into_iter()
-        .map(|p| Point::from_shiftable_point(&p))
-        .collect()
-}
+    pub fn cluster(&self, points: &[Point]) -> Vec<Point> {
+        // The points are copied into a new list of ShiftablePoint structs, which contain the original position and a mutable position.
+        let mut shifted_points: Vec<_> = points
+            .iter()
+            .map(|p| ShiftablePoint::from_point(p))
+            .collect();
 
-fn shift_point(
-    p: &mut ShiftablePoint,
-    points: &[Point],
-    window: fn((f32, f32), (f32, f32)) -> f32,
-) {
-    let mut r = (0f32, 0f32); // result position, r.
-    let mut weight = 0f32;
-    for k in points.iter() {
-        // other point, k.
-        let w = window(p.group, k.position);
-        r.0 += w * k.position.0;
-        r.1 += w * k.position.1;
-        weight += w;
+        // Each point is mean shifted, affecting only the mutable position.
+        for _ in 0..self.max_iterations {
+            shifted_points
+                .par_iter_mut()
+                .for_each(|mut p| self.shift_point(&mut p, &points))
+        }
+
+        // The points are split into groups, based on the shifted position.
+        // The highest intensity point in each group is selected, and the original position is appended to the list of results.
+        let mut result: Vec<ShiftablePoint> = Vec::new();
+
+        for p in shifted_points {
+            if !result.contains(&p) {
+                result.push(p)
+            } else {
+                let idx = result
+                    .iter()
+                    .position(|other| *other == p && other.value < p.value);
+                if let Some(i) = idx {
+                    result[i] = p;
+                }
+            }
+        }
+
+        result
+            .into_iter()
+            .map(|p| Point::from_shiftable_point(&p))
+            .collect()
     }
 
-    p.group = (r.0 / weight, r.1 / weight);
+    fn shift_point(&self, 
+        p: &mut ShiftablePoint,
+        points: &[Point],
+    ) {
+        let mut r = (0f32, 0f32); // result position, r.
+        let mut weight = 0f32;
+        for k in points.iter() {
+            // other point, k.
+            let w = (self.window)(p.group, k.position);
+            r.0 += w * k.position.0;
+            r.1 += w * k.position.1;
+            weight += w;
+        }
+    
+        p.group = (r.0 / weight, r.1 / weight);
+    }
 }
 
+trait WindowFn = Send + Sync + Fn((f32, f32), (f32, f32)) -> f32;
+
+#[allow(clippy::if_same_then_else)]
 pub fn circular_window(a: (f32, f32), b: (f32, f32), radius: f32) -> f32 {
     let delta = (b.0 - a.0, b.1 - a.1);
     if delta.0 > radius || delta.1 > radius {
@@ -113,6 +140,7 @@ pub fn circular_window(a: (f32, f32), b: (f32, f32), radius: f32) -> f32 {
     }
 }
 
+#[allow(clippy::if_same_then_else)]
 pub fn ellipse_window(a: (f32, f32), b: (f32, f32), axis: (f32, f32)) -> f32 {
     let delta = (b.0 - a.0, b.1 - a.1);
     if delta.0 > axis.0 || delta.1 > axis.1 {
@@ -177,17 +205,20 @@ mod tests {
 
         // Sort vectors so that they can be compared.
         actual.sort_by(|a, b| {
-            a.position.0.partial_cmp(&b.position.0)
+            a.position
+                .0
+                .partial_cmp(&b.position.0)
                 .unwrap()
                 .then(a.position.1.partial_cmp(&b.position.1).unwrap())
         });
         expected.sort_by(|a, b| {
-            a.position.0.partial_cmp(&b.position.0)
+            a.position
+                .0
+                .partial_cmp(&b.position.0)
                 .unwrap()
                 .then(a.position.1.partial_cmp(&b.position.1).unwrap())
         });
 
         assert_eq!(expected, actual);
-
     }
 }

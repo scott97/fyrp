@@ -21,6 +21,16 @@ arg_enum! {
     }
 }
 
+arg_enum! {
+    #[derive(Debug, Clone)]
+    pub enum ClusteringWindow {
+        Circular,
+        Ellipse,
+        Gaussian,
+        GaussianEllipse
+    }
+}
+
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(name = "Bubble audio tool", about = "A tool for analysing hydrophone data to identify bubbles.")]
 pub struct Opt {
@@ -63,6 +73,24 @@ pub struct Opt {
     /// Disable parallel processing of data
     #[structopt(long = "no-parallel", parse(from_flag = std::ops::Not::not))]
     pub parallel: bool,
+
+    /// Disable clustering of close data points
+    #[structopt(long = "no-clustering", parse(from_flag = std::ops::Not::not))]
+    pub clustering: bool,
+
+    /// Clustering Window
+    #[structopt(long="window",possible_values = &ClusteringWindow::variants(), case_insensitive = true, default_value = "Circular")]
+    pub clustering_window: ClusteringWindow,
+
+    /// Clustering Window Bandwidth (For circular windows, specify a single number, for ellipse windows, specify two)
+    #[structopt(long="bandwidth", default_value = "15")]
+    pub clustering_window_bandwidths: Vec<f32>,
+
+    /// Clustering Window Maximum Iterations
+    /// Choose a value which is sufficient for clustering to work.
+    /// Higher values give slower performance.
+    #[structopt(short="i", long, default_value = "15")]
+    pub max_iterations: u32,
 
     /// Export Scaleograms
     #[structopt(short, long)]

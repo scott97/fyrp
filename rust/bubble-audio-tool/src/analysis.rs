@@ -1,6 +1,5 @@
 use crate::config;
-use crate::mean_shift_clustering::ellipse_window;
-use crate::mean_shift_clustering::mean_shift_cluster;
+use crate::mean_shift_clustering::MeanShiftClustering;
 use crate::mean_shift_clustering::Point;
 use std::f32::consts::TAU;
 
@@ -13,6 +12,7 @@ use crate::iter;
 pub struct BubbleIdentifier {
     cwt: Box<dyn Cwt<std::vec::IntoIter<f32>>>,
     parallel: bool,
+    cluster_alg: Option<MeanShiftClustering>,
     threshold: f32,
     frequencies: Vec<f32>,
     fs: u32,
@@ -62,6 +62,7 @@ impl BubbleIdentifier {
         BubbleIdentifier {
             cwt,
             parallel: opt.parallel,
+            cluster_alg: if opt.clustering {Some(MeanShiftClustering::new(&opt))} else {None},
             threshold: opt.threshold,
             frequencies,
             fs,
@@ -75,36 +76,44 @@ impl BubbleIdentifier {
             self.cwt.process(&mut chunk.into_iter())
         };
         threshold(&mut s, self.threshold);
-        find_bubbles(&s, &self.frequencies, self.fs)
+        self.find_bubbles(&s)
     }
-}
 
-pub fn find_bubbles(s: &[Vec<f32>], frequencies: &[f32], fs: u32) -> Vec<(f32, f32)> {
-    let mut peaks: Vec<Point> = Vec::new();
-    for row in 1..s.len() - 1 {
-        for col in 1..s[0].len() - 1 {
-            // Check it is a local maximum.
-            if s[row][col] > s[row + 1][col]
-                && s[row][col] > s[row - 1][col]
-                && s[row][col] > s[row][col + 1]
-                && s[row][col] > s[row][col - 1]
-            {
-                let freq = frequencies[row] * 1e-3; // kHz.
-                let time = (col as f32) / (fs as f32) * 1e3; // ms.
-                let value = s[row][col];
-                let p = Point {
-                    position: (freq, time),
-                    value,
-                };
-                peaks.push(p);
+    fn find_bubbles(&self, s: &[Vec<f32>]) -> Vec<(f32, f32)> {
+        let fs = self.fs as f32;
+
+        let mut peaks: Vec<Point> = Vec::new();
+        for row in 1..s.len() - 1 {
+            for col in 1..s[0].len() - 1 {
+                // Check it is a local maximum.
+                if s[row][col] > s[row + 1][col]
+                    && s[row][col] > s[row - 1][col]
+                    && s[row][col] > s[row][col + 1]
+                    && s[row][col] > s[row][col - 1]
+                {
+                    let freq = self.frequencies[row] * 1e-3; // kHz.
+                    let time = (col as f32) / fs * 1e3; // ms.
+                    let value = s[row][col];
+                    let p = Point {
+                        position: (freq, time),
+                        value,
+                    };
+                    peaks.push(p);
+                }
             }
         }
-    }
 
-    mean_shift_cluster(&peaks, |a, b| ellipse_window(a, b, (15., 15.)), 20)
-        .into_iter()
-        .map(|p| (to_radius(p.position.0), p.position.1))
-        .collect()
+        let points = if self.cluster_alg.is_some() {
+            self.cluster_alg.as_ref().unwrap().cluster(&peaks)
+        } else {
+            peaks
+        };
+
+        points
+            .into_iter()
+            .map(|p| (to_radius(p.position.0), p.position.1))
+            .collect()
+    }
 }
 
 pub fn threshold(s: &mut Vec<Vec<f32>>, min: f32) {
