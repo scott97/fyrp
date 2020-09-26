@@ -12,10 +12,10 @@ mod config;
 mod conv;
 mod cwt;
 mod fileio;
+mod integration_tests;
 mod iter;
 mod mean_shift_clustering;
 mod summary;
-mod integration_tests;
 
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
@@ -34,12 +34,10 @@ fn main() {
         println!("Configuration: {:#?}", &opt);
     }
 
-   run(&opt);
+    run(&opt);
 }
 
 fn run(opt: &config::Opt) {
-    
-
     let (d, fs) = fileio::get_data(opt.input.as_path()).unwrap();
 
     if opt.debug {
@@ -113,7 +111,11 @@ fn run(opt: &config::Opt) {
         joiner.append(idx, &b);
     }
 
-    joiner.summarise();
+    let data = joiner.get_joined();
+    fileio::export_bubble_data(&data, opt.out_dir.as_path(), 0)
+        .expect("Bubble data could not be written to a csv file");
+    fileio::plot_bubble_data(&data, opt.out_dir.as_path(), 0)
+        .expect("Bubble data could not be plotted");
 
     t.join().unwrap();
 }

@@ -1,8 +1,9 @@
-use charts::{Chart, Color, MarkerType, PointLabelPosition, ScaleLinear, ScatterView};
+use charts::{Chart, Color, MarkerType, ScaleLinear, ScatterView};
 use std::fs::File;
 use std::path::Path;
 use std::process::Command;
 use std::env;
+use std::error::Error;
 
 pub fn get_data(path: &Path) -> Option<(Vec<f32>, u32)> {
     let mut input_file = File::open(path).unwrap();
@@ -35,27 +36,27 @@ pub fn export_scaleogram(s: &[Vec<f32>], dir: &Path, idx: usize) {
 }
 
 // Write bubble identification data to a csv file
-pub fn export_bubble_data(b: &[(f32, f32)], dir: &Path, idx: usize) {
+pub fn export_bubble_data(b: &[(f32, f32)], dir: &Path, idx: usize) -> Result<(), Box<dyn Error>> {
     let name = format!("bubbles{}.csv", idx);
     let path = dir.join(Path::new(&name));
 
     if !b.is_empty() {
-        let mut wtr = csv::Writer::from_path(path).unwrap();
+        let mut wtr = csv::Writer::from_path(path)?;
         let text_vec: Vec<String> = b.iter().map(|(rad, _)| format!("{:e}", rad)).collect();
-        wtr.write_record(&text_vec).unwrap();
+        wtr.write_record(&text_vec)?;
         let text_vec: Vec<String> = b.iter().map(|(_, ts)| format!("{:e}", ts)).collect();
-        wtr.write_record(&text_vec).unwrap();
-        wtr.flush().unwrap();
+        wtr.write_record(&text_vec)?;
+        wtr.flush()?;
+        Ok(())
     } else {
-        File::create(path).unwrap();
+        File::create(path)?;
+        Ok(())
     }
 }
 
 // Plot bubble identification data on a graph
-pub fn plot_bubble_data(b: &[(f32, f32)], dir: &Path, idx: usize) -> std::io::Result<()> {
+pub fn plot_bubble_data(b: &[(f32, f32)], dir: &Path, idx: usize) -> Result<(), Box<dyn Error>> {
 
-    
-        
     let name = format!("bubbles{}.svg", idx);
     let path = dir.join(Path::new(&name));
 
@@ -84,7 +85,7 @@ pub fn plot_bubble_data(b: &[(f32, f32)], dir: &Path, idx: usize) -> std::io::Re
         .set_marker_type(MarkerType::Circle)
         .set_colors(Color::color_scheme_dark())
         .load_data(&scatter_data)
-        .unwrap();
+        .expect("scatter view could not be created");
 
     // Generate and save the chart.
     Chart::new()

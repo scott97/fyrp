@@ -1,11 +1,8 @@
 use crate::config;
-use crate::fileio;
-use std::path::PathBuf;
 
 pub struct Joiner {
     segment_size: f32,
     data: Vec<(f32, f32)>,
-    out_dir: PathBuf,
 }
 
 impl Joiner {
@@ -13,7 +10,6 @@ impl Joiner {
         Joiner {
             segment_size: opt.segment_size,
             data: Vec::new(),
-            out_dir: opt.out_dir.to_owned()
         }
     }
     pub fn append(&mut self, idx: isize, data: &[(f32, f32)]) {
@@ -23,8 +19,7 @@ impl Joiner {
         });
         self.data.extend(iter)
     }
-    pub fn summarise(&self) {
-        fileio::export_bubble_data(&self.data, self.out_dir.as_path(), 0);
-        fileio::plot_bubble_data(&self.data, self.out_dir.as_path(), 0).expect("Bubble data could not be plotted");
+    pub fn get_joined(&self) -> Vec<(f32, f32)> {
+        self.data.to_owned()
     }
 }
