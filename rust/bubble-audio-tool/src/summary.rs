@@ -25,5 +25,6 @@ impl Joiner {
     }
     pub fn summarise(&self) {
         fileio::export_bubble_data(&self.data, self.out_dir.as_path(), 0);
+        fileio::plot_bubble_data(&self.data, self.out_dir.as_path(), 0).expect("Bubble data could not be plotted");
     }
 }

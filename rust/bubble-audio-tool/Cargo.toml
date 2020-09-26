@@ -19,3 +19,4 @@ queues = "1.1.0" # For circular buffer
 structopt = "0.3.17" # For command line interface
 indicatif = "0.15.0" # For progress bar
 winapi-util = "0.1.5" # For colored text
+charts = "0.3.0" # For plotting
