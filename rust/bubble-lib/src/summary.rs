@@ -6,7 +6,7 @@ pub struct Joiner {
 }
 
 impl Joiner {
-    pub fn new(opt: &config::Opt) -> Joiner {
+    pub fn new(opt: &config::Opts) -> Joiner {
         Joiner {
             segment_size: opt.segment_size,
             data: Vec::new(),

@@ -1,6 +1,6 @@
 use rayon::prelude::*;
-use crate::config;
 use std::f32::consts::TAU;
+use crate::config;
 
 #[derive(Debug)]
 pub struct Point {
@@ -51,7 +51,7 @@ pub struct MeanShiftClustering {
 }
 
 impl MeanShiftClustering {
-    pub fn new(opt: &config::Opt) -> Self {
+    pub fn new(opt: &config::Opts) -> Self {
         let bw = opt.clustering_window_bandwidths.to_vec();
 
         match opt.clustering_window {

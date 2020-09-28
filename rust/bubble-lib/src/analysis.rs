@@ -1,4 +1,4 @@
-use crate::config;
+use crate::*;
 use crate::mean_shift_clustering::MeanShiftClustering;
 use crate::mean_shift_clustering::Point;
 use std::f32::consts::TAU;
@@ -8,6 +8,7 @@ use crate::cwt::alg::Cwt;
 use crate::cwt::wavelets;
 use crate::cwt::wavelets::WaveletFn;
 use crate::iter;
+use crate::config;
 
 pub struct BubbleIdentifier {
     cwt: Box<dyn Cwt<std::vec::IntoIter<f32>>>,
@@ -19,7 +20,7 @@ pub struct BubbleIdentifier {
 }
 
 impl BubbleIdentifier {
-    pub fn new(opt: &config::Opt, fs: u32) -> Self {
+    pub fn new(opt: &config::Opts, fs: u32) -> Self {
         const PEAK_FINDING_OVERLAP: usize = 2;
         let take = (opt.segment_size * 1e-3 * fs as f32) as usize;
         let peek = (50e-3 * fs as f32) as usize + PEAK_FINDING_OVERLAP;

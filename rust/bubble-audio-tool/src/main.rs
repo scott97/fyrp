@@ -7,40 +7,61 @@ extern crate test; // for benchmarks.
 #[macro_use]
 extern crate approx;
 
-mod analysis;
-mod config;
-mod conv;
-mod cwt;
+
 mod fileio;
 mod integration_tests;
-mod iter;
-mod mean_shift_clustering;
-mod summary;
+
 
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
+use std::path::PathBuf;
 use structopt::StructOpt;
 use winapi_util::console::{Color, Console, Intense};
+use bubble_lib::{analysis,summary,config};
+
+
+#[derive(StructOpt, Debug, Clone)]
+#[structopt(
+    name = "Bubble audio tool",
+    about = "A tool for analysing hydrophone data to identify bubbles."
+)]
+pub struct CmdOpts {
+    /// Input file (.wav only)
+    #[structopt(parse(from_os_str))]
+    pub input: PathBuf,
+
+    /// Output directory
+    #[structopt(parse(from_os_str), default_value = "tmp")]
+    pub out_dir: PathBuf,
+
+    /// Export Scaleograms
+    #[structopt(short, long)]
+    pub scaleograms: bool,
+
+    #[structopt(flatten)]
+    pub opts: config::Opts,
+}
+
 
 fn main() {
-    let opt = config::Opt::from_args();
+    let cmd = CmdOpts::from_args();
 
-    if opt.debug {
+    if cmd.opts.debug {
         let mut con = Console::stdout().unwrap();
         con.fg(Intense::Yes, Color::Magenta).unwrap();
         println!("Debug mode enabled.");
         con.reset().unwrap();
-        println!("Configuration: {:#?}", &opt);
+        println!("Configuration: {:#?}", &cmd);
     }
 
-    run(&opt);
+    run(&cmd);
 }
 
-fn run(opt: &config::Opt) {
-    let (d, fs) = fileio::get_data(opt.input.as_path()).unwrap();
+fn run(cmd: &CmdOpts) {
+    let (d, fs) = fileio::get_data(cmd.input.as_path()).unwrap();
 
-    if opt.debug {
+    if cmd.opts.debug {
         println!("Read success.");
         println!(
             "Signal duration: {} ms.",
@@ -51,7 +72,7 @@ fn run(opt: &config::Opt) {
 
     // Chunk length requirements.
     const PEAK_FINDING_OVERLAP: usize = 2;
-    let take = (opt.segment_size * 1e-3 * fs as f32) as usize;
+    let take = (cmd.opts.segment_size * 1e-3 * fs as f32) as usize;
     let peek = (50e-3 * fs as f32) as usize + PEAK_FINDING_OVERLAP;
     let len = take + peek;
     let total_len = d.len();
@@ -88,8 +109,8 @@ fn run(opt: &config::Opt) {
             .progress_chars("##-"),
     );
 
-    let mut identifier = analysis::BubbleIdentifier::new(&opt, fs);
-    let mut joiner = summary::Joiner::new(&opt);
+    let mut identifier = analysis::BubbleIdentifier::new(&cmd.opts, fs);
+    let mut joiner = summary::Joiner::new(&cmd.opts);
 
     // Count up from one.
     for idx in 1.. {
@@ -112,9 +133,9 @@ fn run(opt: &config::Opt) {
     }
 
     let data = joiner.get_joined();
-    fileio::export_bubble_data(&data, opt.out_dir.as_path(), 0)
+    fileio::export_bubble_data(&data, cmd.out_dir.as_path(), 0)
         .expect("Bubble data could not be written to a csv file");
-    fileio::plot_bubble_data(&data, opt.out_dir.as_path(), 0)
+    fileio::plot_bubble_data(&data, cmd.out_dir.as_path(), 0)
         .expect("Bubble data could not be plotted");
 
     t.join().unwrap();
