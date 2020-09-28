@@ -7,7 +7,7 @@ use std::path::Path;
 #[test]
 fn integration_test() {
     let opts = config::Opts {
-        cwt: config::CwtAlg::FftCpxFilterBank,
+        cwt: config::CwtAlg::FftFilterBank,
         debug: false,
         segment_size: 200., // ms
         threshold: 100.,
@@ -51,7 +51,9 @@ fn integration_test() {
         }
 
         // Process chunk
-        let b = identifier.process(chunk);
+        let mut s = identifier.cwt(chunk);
+        identifier.threshold(&mut s);
+        let b = identifier.find_bubbles(&s);
         joiner.append(i, &b);
     }
 

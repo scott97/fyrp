@@ -10,13 +10,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "approx"
-version = "0.3.2"
+name = "assert_approx_eq"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0e60b75072ecd4168020818c0107f2857bb6c4e64252d8d3983f6263b40a5c3"
-dependencies = [
- "num-traits",
-]
+checksum = "3c07dab4369547dbe5114677b33fbbf724971019f3818172d59a97a61c774ffd"
 
 [[package]]
 name = "atty"
@@ -57,7 +54,7 @@ dependencies = [
 name = "bubble-lib"
 version = "0.1.0"
 dependencies = [
- "approx",
+ "assert_approx_eq",
  "csv",
  "itertools",
  "packed_simd",

@@ -8,11 +8,8 @@ pub use self::simd::Simd;
 mod fft;
 pub use self::fft::Fft;
 
-mod fft_cpx;
-pub use self::fft_cpx::FftCpx;
-
-mod fft_cpx_filterbank;
-pub use self::fft_cpx_filterbank::FftCpxFilterBank;
+mod fft_filterbank;
+pub use self::fft_filterbank::FftFilterBank;
 
 // Traits
 pub trait Cwt<I> where I: Iterator<Item = f32> {

@@ -6,8 +6,7 @@ arg_enum! {
     #[derive(Debug, Clone)]
     pub enum CwtAlg {
         Fft,
-        FftCpx,
-        FftCpxFilterBank,
+        FftFilterBank,
         Simd,
         Standard
     }
@@ -35,7 +34,7 @@ arg_enum! {
 #[derive(StructOpt, Debug, Clone)]
 pub struct Opts {
     /// Continuous wavelet transform algorithm
-    #[structopt(short,long,possible_values = &CwtAlg::variants(), case_insensitive = true, default_value = "FftCpxFilterBank")]
+    #[structopt(short,long,possible_values = &CwtAlg::variants(), case_insensitive = true, default_value = "FftFilterBank")]
     pub cwt: CwtAlg,
 
     /// Activate debug mode.

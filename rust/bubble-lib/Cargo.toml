@@ -14,6 +14,6 @@ packed_simd = "0.3.3" # For SIMD
 structopt = "0.3.17" # For command line support
 
 [dev-dependencies]
-csv = "1" # For exporting cwt
-wav = "0.4.0" # For reading file
-approx = "0.3.2" # For unit tests with floats
+csv = "1" # For inporting and exporting data
+wav = "0.4.0" # For reading audio files
+assert_approx_eq = "1.1.0" # For unit tests with floats

@@ -7,18 +7,15 @@ extern crate test; // for benchmarks.
 #[macro_use]
 extern crate approx;
 
-
 mod fileio;
 
-
+use bubble_lib::{analysis, config, summary};
+use std::path::PathBuf;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
-use std::path::PathBuf;
 use structopt::StructOpt;
 use winapi_util::console::{Color, Console, Intense};
-use bubble_lib::{analysis,summary,config};
-
 
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(
@@ -41,7 +38,6 @@ pub struct CmdOpts {
     #[structopt(flatten)]
     pub opts: config::Opts,
 }
-
 
 fn main() {
     let cmd = CmdOpts::from_args();
@@ -127,8 +123,13 @@ pub fn run(cmd: &CmdOpts) {
         }
 
         // Process chunk
-        let b = identifier.process(chunk);
-        joiner.append(idx, &b);
+        let mut s = identifier.cwt(chunk);
+        identifier.threshold(&mut s);
+        if cmd.scaleograms {
+            fileio::export_scaleogram(&s, cmd.out_dir.as_path(), idx);
+        }
+        let b = identifier.find_bubbles(&s);
+        joiner.append(idx as isize, &b);
     }
 
     let data = joiner.get_joined();

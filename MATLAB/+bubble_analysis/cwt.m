@@ -9,7 +9,8 @@ function [s,f] = cwt(y,wvlt_fn,wvlt_bounds,f,fs)
         scale = 1/f(i);
         t = (wvlt_bounds(1)*scale):(1/fs):(wvlt_bounds(2)*scale);
         wv = wvlt_fn(t/scale);
-        row = conv(y,fliplr(wv)) .* (1/sqrt(scale));
+        % row = conv(y,fliplr(wv)) .* (1/sqrt(scale));
+        row = xcorr(y,wv) .* (1/sqrt(scale));
         s(i,:) = row(length(wv):end);
     end
     f = f'; % To match matlab's implementation

@@ -1,27 +1,25 @@
 use super::Cwt;
 
-
+use crate::cwt::wavelets::WaveletFn;
 use rayon::prelude::*;
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use rustfft::FFTplanner;
 use rustfft::FFT;
-use crate::cwt::wavelets::WaveletFn;
 
-
-pub struct FftCpxFilterBank {
+pub struct FftFilterBank {
     filter_bank: Vec<Vec<Complex<f32>>>, // Calculated ahead of time and reused.
     take: usize,                         // Length to save.
 }
 
-impl FftCpxFilterBank {
+impl FftFilterBank {
     pub fn new(
         chunk_len: usize,
         max_wvt_len: usize, // Length to discard.
         wvt: WaveletFn,
         frequencies: &[f32],
         fs: u32,
-    ) -> FftCpxFilterBank {
+    ) -> FftFilterBank {
         let filter_bank: Vec<Vec<Complex<f32>>> = frequencies
             .par_iter()
             .map(|f| {
@@ -37,14 +35,14 @@ impl FftCpxFilterBank {
             })
             .collect();
 
-        FftCpxFilterBank {
+        FftFilterBank {
             filter_bank,
             take: chunk_len - max_wvt_len,
         }
     }
 }
 
-impl<I: Iterator<Item = f32>> Cwt<I> for FftCpxFilterBank {
+impl<I: Iterator<Item = f32>> Cwt<I> for FftFilterBank {
     fn process(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         // Copy signal into a vector of complex numbers.
         let mut sig_t: Vec<Complex<f32>> = sig.map(Complex::from).collect();
@@ -110,5 +108,51 @@ impl<I: Iterator<Item = f32>> Cwt<I> for FftCpxFilterBank {
                 row_t.iter().take(self.take).map(|i| i.norm()).collect()
             })
             .collect()
+    }
+}
+
+// Unit tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cwt::*;
+    use crate::iter;
+    use assert_approx_eq::assert_approx_eq;
+
+    #[test]
+    fn test_cwt_fft_cpx_filterbank() {
+        let d: Vec<_> = (0..8).map(|n| (n as f32).sin()).collect();
+        let fs: u32 = 44100;
+
+        let chunk_len: usize = 8;
+        let peek_len: usize = 2;
+
+        let wvt = WaveletFn::Soulti(wavelets::Soulti::new(0.3));
+        let frequencies: Vec<_> = iter::rangef(1e3, 2e3, 500e0).collect();
+
+        let mut alg = FftFilterBank::new(chunk_len, peek_len, wvt, &frequencies, fs);
+
+        let expected = vec![
+            vec![
+                11.720512, 27.309483, 35.759567, 39.534855, 47.096947, 43.889164,
+            ],
+            vec![
+                18.776264, 41.308903, 58.713436, 51.981052, 55.199570, 62.125590,
+            ],
+            vec![
+                27.564340, 54.117737, 80.081700, 65.083590, 60.965378, 77.922485,
+            ],
+        ];
+
+        let actual = alg.process_par(&mut d.into_iter());
+
+        // Assert equal
+        assert_eq!(expected.len(), actual.len());
+        for (exp, act) in expected.iter().zip(actual.iter()) {
+            assert_eq!(exp.len(), act.len());
+            for (e, a) in exp.iter().zip(act.iter()) {
+                assert_approx_eq!(e, a, 1e-3);
+            }
+        }
     }
 }

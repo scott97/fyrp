@@ -45,18 +45,18 @@ impl BubbleIdentifier {
             config::Wavelet::Morlet => WaveletFn::Morlet(wavelets::Morlet::new()),
         };
         let cwt: Box<dyn Cwt<std::vec::IntoIter<f32>>> = match opt.cwt {
-            config::CwtAlg::FftCpxFilterBank => {
-                box alg::FftCpxFilterBank::new(len, peek, wvt, &frequencies, fs)
+            config::CwtAlg::FftFilterBank => {
+                box alg::FftFilterBank::new(len, peek, wvt, &frequencies, fs)
             }
-            config::CwtAlg::FftCpx => box alg::FftCpx::new(wvt, [0., 50.], &frequencies, fs),
-            config::CwtAlg::Fft => {
-                box alg::Fft::new(|t| wavelets::soulti(t, 0.02), [0., 50.], &frequencies, fs)
-            }
+            config::CwtAlg::Fft => box alg::Fft::new(len, peek, wvt, [0., 50.], &frequencies, fs),
             config::CwtAlg::Standard => {
-                box alg::Standard::new(|t| wavelets::soulti(t, 0.02), [0., 50.], &frequencies, fs)
+                box alg::Standard::new(len, peek, wvt, [0., 50.], &frequencies, fs)
             }
             config::CwtAlg::Simd => {
                 box alg::Simd::new(|t| wavelets::soulti(t, 0.02), [0., 50.], &frequencies, fs)
+            }
+            _ => {
+                panic!();
             }
         };
 
@@ -70,17 +70,25 @@ impl BubbleIdentifier {
         }
     }
 
-    pub fn process(&mut self, chunk: Vec<f32>) -> Vec<(f32, f32)> {
-        let mut s = if self.parallel {
+    pub fn cwt(&mut self, chunk: Vec<f32>) -> Vec<Vec<f32>> {
+        if self.parallel {
             self.cwt.process_par(&mut chunk.into_iter())
         } else {
             self.cwt.process(&mut chunk.into_iter())
-        };
-        threshold(&mut s, self.threshold);
-        self.find_bubbles(&s)
+        }
     }
 
-    fn find_bubbles(&self, s: &[Vec<f32>]) -> Vec<(f32, f32)> {
+    pub fn threshold(&self, s: &mut Vec<Vec<f32>>) {
+        for row in s.iter_mut() {
+            for val in row {
+                if *val < self.threshold {
+                    *val = 0.;
+                }
+            }
+        }
+    }
+
+    pub fn find_bubbles(&self, s: &[Vec<f32>]) -> Vec<(f32, f32)> {
         let fs = self.fs as f32;
 
         let mut peaks: Vec<Point> = Vec::new();
@@ -117,15 +125,7 @@ impl BubbleIdentifier {
     }
 }
 
-pub fn threshold(s: &mut Vec<Vec<f32>>, min: f32) {
-    for row in s.iter_mut() {
-        for val in row {
-            if *val < min {
-                *val = 0.;
-            }
-        }
-    }
-}
+
 
 pub fn to_radius(freq: f32) -> f32 {
     (3f32 * 1.4f32 * 101.325f32).sqrt() / (freq * TAU)
