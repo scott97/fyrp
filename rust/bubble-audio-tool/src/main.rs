@@ -9,7 +9,6 @@ extern crate approx;
 
 
 mod fileio;
-mod integration_tests;
 
 
 use std::sync::mpsc;
@@ -58,7 +57,7 @@ fn main() {
     run(&cmd);
 }
 
-fn run(cmd: &CmdOpts) {
+pub fn run(cmd: &CmdOpts) {
     let (d, fs) = fileio::get_data(cmd.input.as_path()).unwrap();
 
     if cmd.opts.debug {

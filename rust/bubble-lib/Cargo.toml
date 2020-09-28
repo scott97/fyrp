@@ -12,3 +12,8 @@ itertools = "0.9.0" # For padding iterators
 rayon = "1.3.1" # For parallel iterators
 packed_simd = "0.3.3" # For SIMD
 structopt = "0.3.17" # For command line support
+
+[dev-dependencies]
+csv = "1" # For exporting cwt
+wav = "0.4.0" # For reading file
+approx = "0.3.2" # For unit tests with floats
