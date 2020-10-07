@@ -26,12 +26,16 @@ pub fn xcorr_fft(
     mut sig: &mut Vec<Complex<f32>>,
     mut fir: &mut Vec<Complex<f32>>,
 ) -> Vec<Complex<f32>> {
-    let n = sig.len();
+    let n = sig.len() + fir.len() - 1;
+    let range = (fir.len()-1)..;
 
     // Time reverse and resize the fir filter.
-    fir.resize(n, Complex::zero());
     fir.reverse();
+    fir.resize(n, Complex::zero());
 
+    // Resize the signal.
+    sig.resize(n, Complex::zero());
+    
     // Frequency domain
     let mut fsig: Vec<Complex<f32>> = vec![Complex::zero(); n];
     let mut ffir: Vec<Complex<f32>> = vec![Complex::zero(); n];
@@ -51,19 +55,21 @@ pub fn xcorr_fft(
 
     // Do IFFT
     let mut result: Vec<Complex<f32>> = vec![Complex::zero(); n];
-    let fft = FFTplanner::new(true).plan_fft(n);
-    fft.process(&mut fres, &mut result);
+    let ifft = FFTplanner::new(true).plan_fft(n);
+    ifft.process(&mut fres, &mut result);
 
-    result
+    result[range].to_vec()
 }
 
 // Unit tests
 #[cfg(test)]
 mod tests {
     use super::*;
-    use assert_approx_eq::assert_approx_eq;
 
     fn assert_slice_approx_eq(a: &[f32], b: &[f32]) {
+        println!("a: {:?}",&a);
+        println!("b: {:?}",&b);
+
         if a.len() != b.len() {
             panic!("{:?}, {:?}", &a, &b);
         }
@@ -77,19 +83,19 @@ mod tests {
     fn get_test(i: isize) -> (Vec<f32>, Vec<f32>, Vec<f32>) {
         match i {
             0 => (
-                // unverified
+                // TODO: this test case is unverified.
                 vec![1.0, 2.0, 3.0],
                 vec![4.0, 5.0],
                 vec![14.0, 23.0, 12.0],
             ),
             1 => (
-                // Verified by hand
+                // Verified by hand.
                 vec![1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0],
                 vec![1.0, 0.0],
                 vec![1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
             ),
             2 => (
-                // Verified by hand
+                // Verified by hand.
                 vec![1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0],
                 vec![1.0, 1.0, 0.0, 0.0],
                 vec![2.0, 1.0, 0.0, 1.0, 2.0, 1.0, 0.0, 0.0],
