@@ -15,7 +15,7 @@ arg_enum! {
 arg_enum! {
     #[derive(Debug, Clone)]
     pub enum Wavelet {
-        Soulti,
+        Laplace,
         Morlet,
     }
 }
@@ -84,10 +84,10 @@ pub struct Opts {
     pub max_iterations: u32,
 
     /// Wavelet function
-    #[structopt(short,long,possible_values = &Wavelet::variants(), case_insensitive = true, default_value = "Soulti")]
+    #[structopt(short,long,possible_values = &Wavelet::variants(), case_insensitive = true, default_value = "Laplace")]
     pub wavelet: Wavelet,
 
     /// Zeta is used by the soulti wavelet function
-    #[structopt(short, long, default_value = "0.02", required_if("wavelet", "Soulti"))]
+    #[structopt(short, long, default_value = "0.02", required_if("wavelet", "Laplace"))]
     pub zeta: f32,
 }

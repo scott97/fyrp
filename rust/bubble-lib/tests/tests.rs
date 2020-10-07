@@ -19,7 +19,7 @@ fn integration_test() {
         clustering_window: config::ClusteringWindow::Circular,
         clustering_window_bandwidths: vec![15.],
         max_iterations: 20,
-        wavelet: config::Wavelet::Soulti,
+        wavelet: config::Wavelet::Laplace,
         zeta: 0.02,
     };
 

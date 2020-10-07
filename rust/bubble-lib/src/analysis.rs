@@ -40,9 +40,9 @@ impl BubbleIdentifier {
             println!("Number of frequency bands: {}", frequencies.len());
         }
 
-        let wvt = match opt.wavelet {
-            config::Wavelet::Soulti => WaveletFn::Soulti(wavelets::Soulti::new(opt.zeta)),
-            config::Wavelet::Morlet => WaveletFn::Morlet(wavelets::Morlet::new()),
+        let wvt: Box<dyn Send + Sync + WaveletFn> = match opt.wavelet {
+            config::Wavelet::Laplace => box wavelets::Laplace::new(opt.zeta),
+            config::Wavelet::Morlet => box wavelets::Morlet::new(),
         };
         let cwt: Box<dyn Cwt<std::vec::IntoIter<f32>>> = match opt.cwt {
             config::CwtAlg::FftFilterBank => {
@@ -54,9 +54,6 @@ impl BubbleIdentifier {
             }
             config::CwtAlg::Simd => {
                 box alg::Simd::new(|t| wavelets::soulti(t, 0.02), [0., 50.], &frequencies, fs)
-            }
-            _ => {
-                panic!();
             }
         };
 

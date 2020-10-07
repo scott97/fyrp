@@ -16,7 +16,7 @@ impl FftFilterBank {
     pub fn new(
         chunk_len: usize,
         max_wvt_len: usize, // Length to discard.
-        wvt: WaveletFn,
+        wvt: Box<dyn Send + Sync + WaveletFn>,
         frequencies: &[f32],
         fs: u32,
     ) -> FftFilterBank {
@@ -127,7 +127,7 @@ mod tests {
         let chunk_len: usize = 8;
         let peek_len: usize = 2;
 
-        let wvt = WaveletFn::Soulti(wavelets::Soulti::new(0.3));
+        let wvt = box wavelets::Laplace::new(0.3);
         let frequencies: Vec<_> = iter::rangef(1e3, 2e3, 500e0).collect();
 
         let mut alg = FftFilterBank::new(chunk_len, peek_len, wvt, &frequencies, fs);

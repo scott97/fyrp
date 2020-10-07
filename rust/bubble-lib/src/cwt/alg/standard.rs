@@ -6,7 +6,7 @@ use rayon::prelude::*;
 use rustfft::num_complex::Complex;
 
 pub struct Standard {
-    wvt: WaveletFn,
+    wvt: Box<dyn Send + Sync + WaveletFn>,
     wvt_bounds: [f32; 2],
     frequencies: Vec<f32>,
     step: f32,
@@ -17,7 +17,7 @@ impl Standard {
     pub fn new(
         chunk_len: usize,
         max_wvt_len: usize,
-        wvt: WaveletFn,
+        wvt: Box<dyn Send + Sync + WaveletFn>,
         wvt_bounds: [f32; 2],
         frequencies: &[f32],
         fs: u32,
