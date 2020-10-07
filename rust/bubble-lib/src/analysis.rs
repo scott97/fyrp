@@ -53,7 +53,7 @@ impl BubbleIdentifier {
                 box alg::Standard::new(len, peek, wvt, [0., 50.], &frequencies, fs)
             }
             config::CwtAlg::Simd => {
-                box alg::Simd::new(|t| wavelets::soulti(t, 0.02), [0., 50.], &frequencies, fs)
+                box alg::Simd::new(wvt, [0., 50.], &frequencies, fs)
             }
         };
 

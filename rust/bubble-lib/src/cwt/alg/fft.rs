@@ -48,7 +48,7 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Fft {
                 let k = 1.0 / scale.sqrt();
 
                 let mut sig_cpx_mut: Vec<Complex<f32>> = sig_cpx.to_vec();
-                let mut wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.func(t / scale)).collect();
+                let mut wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.cplx(t / scale)).collect();
 
                 xcorr::xcorr_fft(&mut sig_cpx_mut, &mut wvt)
                     .iter()
@@ -73,7 +73,7 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Fft {
                 let k = 1.0 / scale.sqrt();
 
                 let mut sig_cpx_mut: Vec<Complex<f32>> = sig_cpx.to_vec();
-                let mut wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.func(t / scale)).collect();
+                let mut wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.cplx(t / scale)).collect();
 
                 xcorr::xcorr_fft(&mut sig_cpx_mut, &mut wvt)
                     .iter()

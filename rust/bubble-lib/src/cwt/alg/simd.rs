@@ -2,9 +2,10 @@ use super::Cwt;
 use crate::conv;
 use crate::iter::rangef;
 use rayon::prelude::*;
+use crate::cwt::wavelets::WaveletFn;
 
 pub struct Simd {
-    wvt_fn: fn(f32) -> f32,
+    wvt: Box<dyn Send + Sync + WaveletFn>,
     wvt_bounds: [f32; 2],
     frequencies: Vec<f32>,
     step: f32,
@@ -12,13 +13,13 @@ pub struct Simd {
 
 impl Simd {
     pub fn new(
-        wvt_fn: fn(f32) -> f32,
+        wvt: Box<dyn Send + Sync + WaveletFn>,
         wvt_bounds: [f32; 2],
         frequencies: &[f32],
         fs: u32,
     ) -> Simd {
         Simd {
-            wvt_fn,
+            wvt,
             wvt_bounds,
             frequencies: frequencies.to_vec(), // Make a copy
             step: 1.0 / (fs as f32),
@@ -39,7 +40,7 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Simd {
                     self.step,
                 );
                 let k = 1.0 / scale.sqrt();
-                let wvt: Vec<f32> = t.map(|t| k * (self.wvt_fn)(t / scale)).collect();
+                let wvt: Vec<f32> = t.map(|t| k * self.wvt.real(t / scale)).collect();
 
                 conv::conv_simd(&sig, &wvt)[wvt.len()..].to_vec()
             })
@@ -57,7 +58,7 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Simd {
                     self.step,
                 );
                 let k = 1.0 / scale.sqrt();
-                let wvt: Vec<f32> = t.map(|t| k * (self.wvt_fn)(t / scale)).collect();
+                let wvt: Vec<f32> = t.map(|t| k * self.wvt.real(t / scale)).collect();
 
                 conv::conv_simd(&sig, &wvt)[wvt.len()..].to_vec()
             })

@@ -25,7 +25,7 @@ impl FftFilterBank {
             .map(|f| {
                 let t = (0..chunk_len).map(|x| x as f32 / fs as f32);
                 let mut wvt_t: Vec<Complex<f32>> =
-                    t.map(|t| f.sqrt() * wvt.func(t * f)).rev().collect();
+                    t.map(|t| f.sqrt() * wvt.cplx(t * f)).rev().collect();
 
                 let mut wvt_f: Vec<Complex<f32>> = vec![Complex::zero(); chunk_len];
                 let fft = FFTplanner::<f32>::new(false).plan_fft(chunk_len);
