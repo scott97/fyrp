@@ -1,4 +1,5 @@
 use rustfft::num_complex::Complex;
+use rustfft::num_traits::Zero;
 use std::f32::consts::TAU;
 
 pub trait WaveletFn {
@@ -27,7 +28,7 @@ impl WaveletFn for Laplace {
         if t >= 0.0 {
             self.a * (TAU * t * self.b).exp() * (TAU * t * Complex::i()).exp()
         } else {
-            Complex::new(0., 0.) // TODO: replace with Complex::zero
+            Complex::zero()
         }
     }
 
