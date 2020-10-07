@@ -4,6 +4,7 @@
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use rustfft::FFTplanner;
+use packed_simd::*;
 
 /// A simple cross correlation implementation.
 pub fn xcorr(x: &[Complex<f32>], h: &[Complex<f32>]) -> Vec<Complex<f32>> {
@@ -19,7 +20,36 @@ pub fn xcorr(x: &[Complex<f32>], h: &[Complex<f32>]) -> Vec<Complex<f32>> {
     y
 }
 
-// pub fn xcorr_simd(x: &[Complex<f32>], h: &[Complex<f32>]) -> Vec<f32> {}
+/// A cross correlation implementation using fast fourier transforms.
+/// Does not work with complex wavelets.
+/// TODO: Implement for complex numbers.
+pub fn xcorr_simd(x: &[Complex<f32>], h: &[Complex<f32>]) -> Vec<Complex<f32>> {
+    let range = ..x.len();
+
+    // Flatten the complex vector into two vectors of f32s.
+    let mut x_re: Vec<_> = x.into_iter().map(|v| v.re).collect();
+    let mut x_im: Vec<_> = x.into_iter().map(|v| v.im).collect();
+
+    let lx = x.len();
+    let lh = h.len();
+    let lxch = lx - (lx % 16) + 16; // Chunked length of x, (rounded up to nearest 16).
+
+    let mut r = vec![0.0; lxch + lh]; // Result vector.
+
+    x_re.resize(lxch + lh, 0.); // pad right w/ zeros to chunk size.
+    x_im.resize(lxch + lh, 0.); // pad right w/ zeros to chunk size.
+
+    for m in 0..lh {
+        for ch in (0..lxch).step_by(16) {
+            let x_chunk = f32x16::from_slice_unaligned(&x_re[(ch + m)..(ch + m + 16)]);
+            let r_chunk = f32x16::from_slice_unaligned(&r[(ch)..(ch + 16)]);
+            let w_chunk = r_chunk + x_chunk * f32x16::splat(h[m].re); // chunk for writing to the result vector.
+            w_chunk.write_to_slice_unaligned(&mut r[(ch)..(ch + 16)]);
+        }
+    }
+
+    r[range].into_iter().map(Complex::from).collect()
+}
 
 /// A cross correlation implementation using fast fourier transforms.
 pub fn xcorr_fft(
@@ -130,6 +160,20 @@ mod tests {
             let hc: Vec<_> = h.iter().map(Complex::from).collect();
 
             let actual: Vec<_> = xcorr(&xc, &hc).iter().map(|i| i.norm()).collect();
+
+            assert_slice_approx_eq(&expected, &actual);
+        }
+    }
+
+    #[test]
+    fn test_xcorr_simd() {
+        for i in 0..3 {
+            let (x, h, expected) = get_test(i);
+
+            let xc: Vec<_> = x.iter().map(Complex::from).collect();
+            let hc: Vec<_> = h.iter().map(Complex::from).collect();
+
+            let actual: Vec<_> = xcorr_simd(&xc, &hc).iter().map(|i| i.norm()).collect();
 
             assert_slice_approx_eq(&expected, &actual);
         }
