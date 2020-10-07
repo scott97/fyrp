@@ -14,6 +14,7 @@ use std::path::PathBuf;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
+use structopt::clap::arg_enum;
 use structopt::StructOpt;
 use winapi_util::console::{Color, Console, Intense};
 
@@ -31,12 +32,25 @@ pub struct CmdOpts {
     #[structopt(parse(from_os_str), default_value = "tmp")]
     pub out_dir: PathBuf,
 
+    /// Output file type
+    #[structopt(long,possible_values = &OutputType::variants(), case_insensitive = true, default_value = "Both")]
+    pub out_type: OutputType,
+
     /// Export Scaleograms
     #[structopt(short, long)]
     pub scaleograms: bool,
 
     #[structopt(flatten)]
     pub opts: config::Opts,
+}
+
+arg_enum! {
+    #[derive(Debug, Clone)]
+    pub enum OutputType {
+        Csv,
+        Svg,
+        Both,
+    }
 }
 
 fn main() {
@@ -133,10 +147,19 @@ pub fn run(cmd: &CmdOpts) {
     }
 
     let data = joiner.get_joined();
-    fileio::export_bubble_data(&data, cmd.out_dir.as_path(), 0)
-        .expect("Bubble data could not be written to a csv file");
-    fileio::plot_bubble_data(&data, cmd.out_dir.as_path(), 0)
-        .expect("Bubble data could not be plotted");
+
+    match cmd.out_type {
+        OutputType::Svg => fileio::plot_bubble_data(&data, cmd.out_dir.as_path(), 0)
+            .expect("Bubble data could not be plotted"),
+        OutputType::Csv => fileio::export_bubble_data(&data, cmd.out_dir.as_path(), 0)
+            .expect("Bubble data could not be written to a csv file"),
+        OutputType::Both => {
+            fileio::plot_bubble_data(&data, cmd.out_dir.as_path(), 0)
+                .expect("Bubble data could not be plotted");
+            fileio::export_bubble_data(&data, cmd.out_dir.as_path(), 0)
+                .expect("Bubble data could not be written to a csv file");
+        }
+    }
 
     t.join().unwrap();
 }
