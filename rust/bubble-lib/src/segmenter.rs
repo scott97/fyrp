@@ -45,7 +45,9 @@ impl Segmenter {
     }
 
     fn push(&mut self, val: f32) {
-        self.queue.push(val).expect("Could not push to the segmenter");
+        self.queue
+            .push(val)
+            .expect("Could not push to the segmenter");
     }
 
     fn pop_segment(&mut self) -> Result<Vec<f32>, SegmentError> {
@@ -55,6 +57,7 @@ impl Segmenter {
     }
 }
 
+#[derive(Debug)]
 pub enum SegmentError {
     PopError(),
     PeekError(),
@@ -68,5 +71,75 @@ impl From<Vec<f32>> for SegmentError {
 impl From<&[f32]> for SegmentError {
     fn from(_e: &[f32]) -> Self {
         SegmentError::PeekError()
+    }
+}
+
+// Unit tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_segmenter_3_2() {
+        let (mut send, mut recv) = Segmenter::split(3, 2);
+
+        send.push(1.0);
+        send.push(2.0);
+        send.push(3.0);
+        send.push(4.0);
+        send.push(5.0);
+        send.push(6.0);
+        send.push(7.0);
+        send.push(8.0);
+        send.push(9.0);
+        send.push(10.0);
+        send.push(11.0);
+        send.push(12.0);
+
+        assert_eq!(
+            vec![1.0, 2.0, 3.0, 4.0, 5.0],
+            recv.pop_segment().expect("unexpected segment error")
+        );
+        assert_eq!(
+            vec![4.0, 5.0, 6.0, 7.0, 8.0],
+            recv.pop_segment().expect("unexpected segment error")
+        );
+        assert_eq!(
+            vec![7.0, 8.0, 9.0, 10.0, 11.0],
+            recv.pop_segment().expect("unexpected segment error")
+        );
+
+        recv.pop_segment()
+            .expect_err("expected segment error but did not receive one");
+    }
+
+    #[test]
+    fn test_segmenter_4_4() {
+        let (mut send, mut recv) = Segmenter::split(4, 4);
+
+        send.push(1.0);
+        send.push(2.0);
+        send.push(3.0);
+        send.push(4.0);
+        send.push(5.0);
+        send.push(6.0);
+        send.push(7.0);
+        send.push(8.0);
+        send.push(9.0);
+        send.push(10.0);
+        send.push(11.0);
+        send.push(12.0);
+
+        assert_eq!(
+            vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
+            recv.pop_segment().expect("unexpected segment error")
+        );
+        assert_eq!(
+            vec![5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0],
+            recv.pop_segment().expect("unexpected segment error")
+        );
+
+        recv.pop_segment()
+            .expect_err("expected segment error but did not receive one");
     }
 }
