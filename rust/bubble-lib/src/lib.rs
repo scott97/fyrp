@@ -5,9 +5,9 @@
 pub mod analysis;
 pub mod summary;
 pub mod config;
+pub mod segmenter;
 mod cwt;
 mod iter;
 mod mean_shift_clustering;
 mod xcorr;
-
 

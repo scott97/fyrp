@@ -9,10 +9,9 @@ extern crate approx;
 
 mod fileio;
 
-use bubble_lib::{analysis, config, summary};
+use bubble_lib::{analysis, config, segmenter, summary};
+use segmenter::Segmenter;
 use std::path::PathBuf;
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use structopt::clap::arg_enum;
 use structopt::StructOpt;
@@ -83,31 +82,15 @@ pub fn run(cmd: &CmdOpts) {
     const PEAK_FINDING_OVERLAP: usize = 2;
     let take = (cmd.opts.segment_size * 1e-3 * fs as f32) as usize;
     let peek = (50e-3 * fs as f32) as usize + PEAK_FINDING_OVERLAP;
-    let len = take + peek;
     let total_len = d.len();
 
-    // Channel
-    let (tx, rx): (Sender<f32>, Receiver<f32>) = mpsc::channel();
+    let (mut send, mut recv) = Segmenter::split(take, peek);
 
-    // Send chunks over channel. Prepare chunks with overlapping data.
+    // Write to the segmenter. This is in a separate thread, so that 
+    // data could be collected from a sensor, as the data is processed.
     let t = thread::spawn(move || {
-        // Iterator
-        let mut iter = d.into_iter().peekable();
-
-        // Read in data into the channel.
-        'outer: loop {
-            for _i in 0..take {
-                match iter.next() {
-                    Some(x) => tx.send(x).unwrap(),
-                    None => break 'outer,
-                }
-            }
-            for _i in 0..peek {
-                match iter.peek() {
-                    Some(x) => tx.send(*x).unwrap(),
-                    None => break 'outer,
-                }
-            }
+        for val in d.into_iter() {
+            send.push(val);
         }
     });
 
@@ -130,20 +113,19 @@ pub fn run(cmd: &CmdOpts) {
             break;
         }
 
-        // Receive a chunk of data
-        let mut chunk = Vec::with_capacity(len);
-        for _i in 0..len {
-            chunk.push(rx.recv().unwrap())
-        }
-
         // Process chunk
-        let mut s = identifier.cwt(chunk);
-        identifier.threshold(&mut s);
-        if cmd.scaleograms {
-            fileio::export_scaleogram(&s, cmd.out_dir.as_path(), idx);
+        if let Ok(chunk) = recv.pop_segment() {
+            
+            let mut s = identifier.cwt(chunk);
+            identifier.threshold(&mut s);
+            if cmd.scaleograms {
+                fileio::export_scaleogram(&s, cmd.out_dir.as_path(), idx);
+            }
+            let b = identifier.find_bubbles(&s);
+            joiner.append(idx as isize, &b);
+        } else {
+            println!("No data");
         }
-        let b = identifier.find_bubbles(&s);
-        joiner.append(idx as isize, &b);
     }
 
     let data = joiner.get_joined();

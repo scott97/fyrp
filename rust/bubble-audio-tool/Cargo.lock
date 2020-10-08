@@ -86,6 +86,7 @@ dependencies = [
  "packed_simd",
  "rayon",
  "rustfft",
+ "slice_queue",
  "structopt",
 ]
 
@@ -581,6 +582,12 @@ name = "serde"
 version = "1.0.114"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5317f7588f0a5078ee60ef675ef96735a1442132dc645eb1d12c018620ed8cd3"
+
+[[package]]
+name = "slice_queue"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86bd21bdb82f08d2d08d274efefdc05d9ab4d43c99a3de49aad268f9714790aa"
 
 [[package]]
 name = "strength_reduce"
