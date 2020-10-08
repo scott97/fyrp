@@ -5,7 +5,6 @@
 pub mod analysis;
 pub mod summary;
 pub mod config;
-mod conv;
 mod cwt;
 mod iter;
 mod mean_shift_clustering;
