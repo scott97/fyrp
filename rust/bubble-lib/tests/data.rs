@@ -1,3 +1,6 @@
+// TODO: This is outdated, also, the integration test does not use it.
+// Consider using the points from the source data csv file.
+// Once I am using a threshold that scales with radius, they should match very closely
 pub fn get() -> Vec<(f32, f32)> {
     let r = vec![
         1.8400009,
