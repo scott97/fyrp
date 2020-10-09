@@ -35,11 +35,53 @@ impl Simd {
 
 impl<I: Iterator<Item = f32>> Cwt<I> for Simd {
     fn process_real(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
-        panic!("Not implemented");
+        let sig_vec: Vec<_> = sig.collect();
+
+        self.frequencies
+            .iter()
+            .map(|f| {
+                let scale = 1.0 / f;
+                let t = rangef(
+                    self.wvt_bounds[0] * scale,
+                    self.wvt_bounds[1] * scale,
+                    self.step,
+                );
+                let k = 1.0 / scale.sqrt();
+
+                let wvt: Vec<_> = t.map(|t| k * self.wvt.real(t / scale)).collect();
+
+                real::xcorr_simd(&sig_vec, &wvt)
+                    .iter()
+                    .take(self.take)
+                    .map(|i| i.abs())
+                    .collect()
+            })
+            .collect()
     }
 
     fn process_real_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
-        panic!("Not implemented");
+        let sig_vec: Vec<_> = sig.collect();
+
+        self.frequencies
+            .par_iter()
+            .map(|f| {
+                let scale = 1.0 / f;
+                let t = rangef(
+                    self.wvt_bounds[0] * scale,
+                    self.wvt_bounds[1] * scale,
+                    self.step,
+                );
+                let k = 1.0 / scale.sqrt();
+
+                let wvt: Vec<_> = t.map(|t| k * self.wvt.real(t / scale)).collect();
+
+                real::xcorr_simd(&sig_vec, &wvt)
+                    .iter()
+                    .take(self.take)
+                    .map(|i| i.abs())
+                    .collect()
+            })
+            .collect()
     }
 
     fn process_cplx(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
@@ -66,7 +108,6 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Simd {
             })
             .collect()
     }
-    
     fn process_cplx_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         let sig_cpx: Vec<Complex<f32>> = sig.map(Complex::from).collect();
 

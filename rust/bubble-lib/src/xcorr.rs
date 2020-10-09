@@ -133,7 +133,6 @@ pub mod real {
     }
 
     /// A cross correlation implementation using SIMD instructions.
-    /// TODO: read out of range error.
     pub fn xcorr_simd(x: &[f32], h: &[f32]) -> Vec<f32> {
         // Lengths
         let lx = x.len();
@@ -141,25 +140,25 @@ pub mod real {
         let lxch = lx - (lx % 16) + 16; // Chunked length of x, (rounded up to nearest 16).
 
         // Pad right w/ zeros to chunk size.
-        x.to_vec().resize(lxch + lh, 0.);
+        let mut x_vec = x.to_vec();
+        x_vec.resize(lxch + lh, 0.);
 
         // Result vector.
         let mut r = vec![0.0; lxch + lh];
 
         for m in 0..lh {
             for ch in (0..lxch).step_by(16) {
-                let x_chunk = f32x16::from_slice_unaligned(&x[(ch + m)..(ch + m + 16)]);
+                let x_chunk = f32x16::from_slice_unaligned(&x_vec[(ch + m)..(ch + m + 16)]);
                 let r_chunk = f32x16::from_slice_unaligned(&r[(ch)..(ch + 16)]);
                 let h_chunk = f32x16::splat(h[m]);
 
                 // chunk for writing to the result vectors.
                 let w_chunk = r_chunk + x_chunk * h_chunk;
-
                 w_chunk.write_to_slice_unaligned(&mut r[(ch)..(ch + 16)]);
             }
         }
 
-        // Combine the two vectors into one
+        // Return result.
         r[..x.len()].to_vec()
     }
 }
@@ -169,7 +168,7 @@ pub mod real {
 mod tests {
     use super::*;
 
-    fn assert_slice_approx_eq(a: &[Complex<f32>], b: &[Complex<f32>]) {
+    fn assert_cplx_f32s_approx_eq(a: &[Complex<f32>], b: &[Complex<f32>]) {
         println!("a: {:?}", &a);
         println!("b: {:?}", &b);
 
@@ -186,7 +185,45 @@ mod tests {
         }
     }
 
-    fn get_test(i: isize) -> (Vec<Complex<f32>>, Vec<Complex<f32>>, Vec<Complex<f32>>) {
+    fn assert_f32s_approx_eq(a: &[f32], b: &[f32]) {
+        println!("a: {:?}", &a);
+        println!("b: {:?}", &b);
+
+        if a.len() != b.len() {
+            panic!("{:?}, {:?}", &a, &b);
+        }
+        for (x, y) in a.iter().zip(b.iter()) {
+            if *x > y + 1e-3 || *y > x + 1e-3 {
+                panic!("{:?}, {:?}", &a, &b);
+            }
+        }
+    }
+
+    fn get_test_real(i: isize) -> (Vec<f32>, Vec<f32>, Vec<f32>) {
+        match i {
+            0 => (
+                // TODO: this test case is unverified.
+                vec![1.0, 2.0, 3.0],
+                vec![4.0, 5.0],
+                vec![14.0, 23.0, 12.0],
+            ),
+            1 => (
+                // Verified by hand.
+                vec![1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0],
+                vec![1.0, 0.0],
+                vec![1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0],
+            ),
+            2 => (
+                // Verified by hand.
+                vec![1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0],
+                vec![1.0, 1.0, 0.0, 0.0],
+                vec![2.0, 1.0, 0.0, 1.0, 2.0, 1.0, 0.0, 0.0],
+            ),
+            _ => panic!("test doesn't exist"),
+        }
+    }
+
+    fn get_test_cplx(i: isize) -> (Vec<Complex<f32>>, Vec<Complex<f32>>, Vec<Complex<f32>>) {
         match i {
             0 => (
                 // TODO: this test case is unverified.
@@ -309,35 +346,57 @@ mod tests {
     }
 
     #[test]
-    fn test_xcorr_fft() {
+    fn test_cplx_xcorr() {
         for i in 0..4 {
-            let (mut x, mut h, expected) = get_test(i);
+            let (x, h, expected) = get_test_cplx(i);
 
-            let actual = xcorr_fft(&mut x, &mut h);
+            let actual = cplx::xcorr(&x, &h);
 
-            assert_slice_approx_eq(&expected, &actual);
+            assert_cplx_f32s_approx_eq(&expected, &actual);
         }
     }
 
     #[test]
-    fn test_xcorr() {
+    fn test_cplx_xcorr_fft() {
         for i in 0..4 {
-            let (x, h, expected) = get_test(i);
+            let (mut x, mut h, expected) = get_test_cplx(i);
 
-            let actual = xcorr(&x, &h);
+            let actual = cplx::xcorr_fft(&mut x, &mut h);
 
-            assert_slice_approx_eq(&expected, &actual);
+            assert_cplx_f32s_approx_eq(&expected, &actual);
         }
     }
 
     #[test]
-    fn test_xcorr_simd() {
+    fn test_cplx_xcorr_simd() {
         for i in 0..4 {
-            let (x, h, expected) = get_test(i);
+            let (x, h, expected) = get_test_cplx(i);
 
-            let actual = xcorr_simd(&x, &h);
+            let actual = cplx::xcorr_simd(&x, &h);
 
-            assert_slice_approx_eq(&expected, &actual);
+            assert_cplx_f32s_approx_eq(&expected, &actual);
+        }
+    }
+
+    #[test]
+    fn test_real_xcorr() {
+        for i in 0..3 {
+            let (x, h, expected) = get_test_real(i);
+
+            let actual = real::xcorr(&x, &h);
+
+            assert_f32s_approx_eq(&expected, &actual);
+        }
+    }
+
+    #[test]
+    fn test_real_xcorr_simd() {
+        for i in 0..3 {
+            let (x, h, expected) = get_test_real(i);
+
+            let actual = real::xcorr_simd(&x, &h);
+
+            assert_f32s_approx_eq(&expected, &actual);
         }
     }
 }
