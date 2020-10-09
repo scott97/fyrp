@@ -21,6 +21,14 @@ arg_enum! {
 }
 
 arg_enum! {
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum WaveletType {
+        RealWavelet,
+        CplxWavelet,
+    }
+}
+
+arg_enum! {
     #[derive(Debug, Clone)]
     pub enum ClusteringWindow {
         Circular,
@@ -29,7 +37,6 @@ arg_enum! {
         GaussianEllipse
     }
 }
-
 
 #[derive(StructOpt, Debug, Clone)]
 pub struct Opts {
@@ -86,6 +93,11 @@ pub struct Opts {
     /// Wavelet function
     #[structopt(short,long,possible_values = &Wavelet::variants(), case_insensitive = true, default_value = "Laplace")]
     pub wavelet: Wavelet,
+
+    /// Wavelet type
+    /// Real wavelets are faster to process when using the SIMD or standard methods of performing the CWT.
+    #[structopt(short,long,possible_values = &WaveletType::variants(), case_insensitive = true, default_value = "CplxWavelet")]
+    pub wavelet_type: WaveletType,
 
     /// Zeta is used by the soulti wavelet function
     #[structopt(short, long, default_value = "0.02", required_if("wavelet", "Laplace"))]

@@ -1,7 +1,8 @@
 use super::Cwt;
 use crate::cwt::wavelets::WaveletFn;
 use crate::iter::rangef;
-use crate::xcorr;
+use crate::xcorr::cplx;
+use crate::xcorr::real;
 use rayon::prelude::*;
 use rustfft::num_complex::Complex;
 
@@ -33,7 +34,15 @@ impl Simd {
 }
 
 impl<I: Iterator<Item = f32>> Cwt<I> for Simd {
-    fn process(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+    fn process_real(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+        panic!("Not implemented");
+    }
+
+    fn process_real_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+        panic!("Not implemented");
+    }
+
+    fn process_cplx(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         let sig_cpx: Vec<Complex<f32>> = sig.map(Complex::from).collect();
 
         self.frequencies
@@ -49,7 +58,7 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Simd {
 
                 let wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.cplx(t / scale)).collect();
 
-                xcorr::xcorr_simd(&sig_cpx, &wvt)
+                cplx::xcorr_simd(&sig_cpx, &wvt)
                     .iter()
                     .take(self.take)
                     .map(|i| i.norm())
@@ -57,7 +66,8 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Simd {
             })
             .collect()
     }
-    fn process_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+    
+    fn process_cplx_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         let sig_cpx: Vec<Complex<f32>> = sig.map(Complex::from).collect();
 
         self.frequencies
@@ -73,7 +83,7 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Simd {
 
                 let wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.cplx(t / scale)).collect();
 
-                xcorr::xcorr_simd(&sig_cpx, &wvt)
+                cplx::xcorr_simd(&sig_cpx, &wvt)
                     .iter()
                     .take(self.take)
                     .map(|i| i.norm())

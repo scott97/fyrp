@@ -1,7 +1,8 @@
 use super::Cwt;
 use crate::cwt::wavelets::WaveletFn;
 use crate::iter::rangef;
-use crate::xcorr;
+use crate::xcorr::cplx;
+use crate::xcorr::real;
 use rayon::prelude::*;
 use rustfft::num_complex::Complex;
 
@@ -33,7 +34,55 @@ impl Standard {
 }
 
 impl<I: Iterator<Item = f32>> Cwt<I> for Standard {
-    fn process(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+    fn process_real(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+        let sig_vec: Vec<_> = sig.collect();
+        self.frequencies
+            .iter()
+            .map(|f| {
+                let scale = 1.0 / f;
+                let t = rangef(
+                    self.wvt_bounds[0] * scale,
+                    self.wvt_bounds[1] * scale,
+                    self.step,
+                );
+                let k = 1.0 / scale.sqrt();
+
+                let wvt: Vec<f32> = t.map(|t| k * self.wvt.real(t / scale)).collect();
+
+                real::xcorr(&sig_vec, &wvt)
+                    .iter()
+                    .take(self.take)
+                    .map(|i| i.abs())
+                    .collect()
+            })
+            .collect()
+    }
+
+    fn process_real_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+        let sig_vec: Vec<_> = sig.collect();
+        self.frequencies
+            .par_iter()
+            .map(|f| {
+                let scale = 1.0 / f;
+                let t = rangef(
+                    self.wvt_bounds[0] * scale,
+                    self.wvt_bounds[1] * scale,
+                    self.step,
+                );
+                let k = 1.0 / scale.sqrt();
+
+                let wvt: Vec<f32> = t.map(|t| k * self.wvt.real(t / scale)).collect();
+
+                real::xcorr(&sig_vec, &wvt)
+                    .iter()
+                    .take(self.take)
+                    .map(|i| i.abs())
+                    .collect()
+            })
+            .collect()
+    }
+
+    fn process_cplx(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         let sig_cpx: Vec<Complex<f32>> = sig.map(Complex::from).collect();
 
         self.frequencies
@@ -50,7 +99,7 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Standard {
                 let mut sig_cpx_mut: Vec<Complex<f32>> = sig_cpx.to_vec();
                 let mut wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.cplx(t / scale)).collect();
 
-                xcorr::xcorr(&mut sig_cpx_mut, &mut wvt)
+                cplx::xcorr(&mut sig_cpx_mut, &mut wvt)
                     .iter()
                     .take(self.take)
                     .map(|i| i.norm())
@@ -58,7 +107,8 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Standard {
             })
             .collect()
     }
-    fn process_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+
+    fn process_cplx_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         let sig_cpx: Vec<Complex<f32>> = sig.map(Complex::from).collect();
 
         self.frequencies
@@ -75,7 +125,7 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Standard {
                 let mut sig_cpx_mut: Vec<Complex<f32>> = sig_cpx.to_vec();
                 let mut wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.cplx(t / scale)).collect();
 
-                xcorr::xcorr(&mut sig_cpx_mut, &mut wvt)
+                cplx::xcorr(&mut sig_cpx_mut, &mut wvt)
                     .iter()
                     .take(self.take)
                     .map(|i| i.norm())

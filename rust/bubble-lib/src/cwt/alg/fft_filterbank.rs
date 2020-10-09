@@ -43,7 +43,17 @@ impl FftFilterBank {
 }
 
 impl<I: Iterator<Item = f32>> Cwt<I> for FftFilterBank {
-    fn process(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+    fn process_real(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+        panic!("--cwt Fft does not support real wavelets. There is no performance 
+                improvement with this combination, and therefore no reason to use it.");
+    }
+    fn process_real_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+        panic!("--cwt Fft does not support real wavelets. There is no performance 
+                improvement with this combination, and therefore no reason to use it.");
+    }
+
+
+    fn process_cplx(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         // Copy signal into a vector of complex numbers.
         let mut sig_t: Vec<Complex<f32>> = sig.map(Complex::from).collect();
         // Signal length.
@@ -76,7 +86,7 @@ impl<I: Iterator<Item = f32>> Cwt<I> for FftFilterBank {
             })
             .collect()
     }
-    fn process_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+    fn process_cplx_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         // Copy signal into a vector of complex numbers.
         let mut sig_t: Vec<Complex<f32>> = sig.map(Complex::from).collect();
         // Signal length.

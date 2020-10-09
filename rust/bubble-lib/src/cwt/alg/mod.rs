@@ -13,17 +13,11 @@ pub use self::fft_filterbank::FftFilterBank;
 
 // Traits
 pub trait Cwt<I> where I: Iterator<Item = f32> {
-    fn process(&mut self, sig: &mut I) -> Vec<Vec<f32>>;
-    fn process_par(&mut self, sig: &mut I) -> Vec<Vec<f32>>;
+    fn process_real(&mut self, sig: &mut I) -> Vec<Vec<f32>>;
+    fn process_cplx(&mut self, sig: &mut I) -> Vec<Vec<f32>>;
+    fn process_real_par(&mut self, sig: &mut I) -> Vec<Vec<f32>>;
+    fn process_cplx_par(&mut self, sig: &mut I) -> Vec<Vec<f32>>;
 }
-
-// pub enum CwtAlg {
-//     Fft(Fft),
-//     FftCpx(FftCpx),
-//     FftCpxFilterBank(FftCpxFilterBank),
-//     Simd(Simd),
-//     Standard(Standard),
-// }
 
 
 

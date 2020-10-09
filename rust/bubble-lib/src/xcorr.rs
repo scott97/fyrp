@@ -7,102 +7,161 @@ use rustfft::num_traits::One;
 use rustfft::num_traits::Zero;
 use rustfft::FFTplanner;
 
-/// A simple cross correlation implementation.
-pub fn xcorr(x: &[Complex<f32>], h: &[Complex<f32>]) -> Vec<Complex<f32>> {
-    let mut y = vec![Complex::zero(); x.len()];
+pub mod cplx {
+    use packed_simd::*;
+    use rustfft::num_complex::Complex;
+    use rustfft::num_traits::One;
+    use rustfft::num_traits::Zero;
+    use rustfft::FFTplanner;
 
-    for i in 0..x.len() {
-        for j in 0..h.len() {
-            let k = i + j;
-            y[i] += x.get(k).unwrap_or(&Complex::zero()) * h[j];
+    /// A simple cross correlation implementation.
+    pub fn xcorr(x: &[Complex<f32>], h: &[Complex<f32>]) -> Vec<Complex<f32>> {
+        let mut r = vec![Complex::zero(); x.len()];
+
+        for i in 0..x.len() {
+            for j in 0..h.len() {
+                let k = i + j;
+                r[i] += x.get(k).unwrap_or(&Complex::zero()) * h[j];
+            }
         }
+
+        r
     }
 
-    y
+    /// A cross correlation implementation using SIMD instructions.
+    pub fn xcorr_simd(x: &[Complex<f32>], h: &[Complex<f32>]) -> Vec<Complex<f32>> {
+        // Lengths
+        let lx = x.len();
+        let lh = h.len();
+        let lxch = lx - (lx % 16) + 16; // Chunked length of x, (rounded up to nearest 16).
+
+        // Flatten the complex vector into two vectors of f32s.
+        let mut x_re: Vec<_> = x.into_iter().map(|v| v.re).collect();
+        let mut x_im: Vec<_> = x.into_iter().map(|v| v.im).collect();
+
+        x_re.resize(lxch + lh, 0.); // pad right w/ zeros to chunk size.
+        x_im.resize(lxch + lh, 0.); // pad right w/ zeros to chunk size.
+
+        // Result vectors.
+        let mut r_re = vec![0.0; lxch + lh];
+        let mut r_im = vec![0.0; lxch + lh];
+
+        for m in 0..lh {
+            for ch in (0..lxch).step_by(16) {
+                let x_re_chunk = f32x16::from_slice_unaligned(&x_re[(ch + m)..(ch + m + 16)]);
+                let x_im_chunk = f32x16::from_slice_unaligned(&x_im[(ch + m)..(ch + m + 16)]);
+                let r_re_chunk = f32x16::from_slice_unaligned(&r_re[(ch)..(ch + 16)]);
+                let r_im_chunk = f32x16::from_slice_unaligned(&r_im[(ch)..(ch + 16)]);
+
+                let h_re_chunk = f32x16::splat(h[m].re);
+                let h_im_chunk = f32x16::splat(h[m].im);
+
+                // chunk for writing to the result vectors.
+                let w_re_chunk = r_re_chunk + x_re_chunk * h_re_chunk - x_im_chunk * h_im_chunk;
+                let w_im_chunk = r_im_chunk + x_re_chunk * h_im_chunk + x_im_chunk * h_re_chunk;
+
+                w_re_chunk.write_to_slice_unaligned(&mut r_re[(ch)..(ch + 16)]);
+                w_im_chunk.write_to_slice_unaligned(&mut r_im[(ch)..(ch + 16)]);
+            }
+        }
+
+        // Combine the two vectors into one
+        r_re[..x.len()]
+            .iter()
+            .zip(r_im.iter())
+            .map(|(re, im)| Complex::new(*re, *im))
+            .collect()
+    }
+
+    /// A cross correlation implementation using fast fourier transforms.
+    pub fn xcorr_fft(
+        mut sig: &mut Vec<Complex<f32>>,
+        mut fir: &mut Vec<Complex<f32>>,
+    ) -> Vec<Complex<f32>> {
+        let n = sig.len() + fir.len() - 1;
+        let range = (fir.len() - 1)..;
+
+        // Time reverse and resize the fir filter.
+        fir.reverse();
+        fir.resize(n, Complex::zero());
+
+        // Resize the signal.
+        sig.resize(n, Complex::zero());
+        // Frequency domain
+        let mut fsig: Vec<Complex<f32>> = vec![Complex::zero(); n];
+        let mut ffir: Vec<Complex<f32>> = vec![Complex::zero(); n];
+
+        // Do FFT
+        let fft = FFTplanner::new(false).plan_fft(n);
+        fft.process(&mut sig, &mut fsig);
+        fft.process(&mut fir, &mut ffir);
+
+        // Elementwise multiplication
+        // Dividing each individually by sqrt(n) is the same as dividing both by n.
+        let mut fres: Vec<Complex<f32>> = vec![Complex::zero(); n];
+        let n_inv = 1. / (n as f32);
+        for i in 0..n {
+            fres[i] = fsig[i] * ffir[i] * n_inv;
+        }
+
+        // Do IFFT
+        let mut result: Vec<Complex<f32>> = vec![Complex::zero(); n];
+        let ifft = FFTplanner::new(true).plan_fft(n);
+        ifft.process(&mut fres, &mut result);
+
+        result[range].to_vec()
+    }
 }
 
-/// A cross correlation implementation using SIMD instructions.
-pub fn xcorr_simd(x: &[Complex<f32>], h: &[Complex<f32>]) -> Vec<Complex<f32>> {
-    // Lengths
-    let lx = x.len();
-    let lh = h.len();
-    let lxch = lx - (lx % 16) + 16; // Chunked length of x, (rounded up to nearest 16).
+/// Cross correlation optimised for real numbers only
+pub mod real {
+    use packed_simd::*;
+    use rustfft::num_complex::Complex;
+    use rustfft::num_traits::One;
+    use rustfft::num_traits::Zero;
+    use rustfft::FFTplanner;
 
-    // Flatten the complex vector into two vectors of f32s.
-    let mut x_re: Vec<_> = x.into_iter().map(|v| v.re).collect();
-    let mut x_im: Vec<_> = x.into_iter().map(|v| v.im).collect();
-
-    x_re.resize(lxch + lh, 0.); // pad right w/ zeros to chunk size.
-    x_im.resize(lxch + lh, 0.); // pad right w/ zeros to chunk size.
-
-    // Result vectors.
-    let mut r_re = vec![0.0; lxch + lh];
-    let mut r_im = vec![0.0; lxch + lh];
-
-    for m in 0..lh {
-        for ch in (0..lxch).step_by(16) {
-            let x_re_chunk = f32x16::from_slice_unaligned(&x_re[(ch + m)..(ch + m + 16)]);
-            let x_im_chunk = f32x16::from_slice_unaligned(&x_im[(ch + m)..(ch + m + 16)]);
-            let r_re_chunk = f32x16::from_slice_unaligned(&r_re[(ch)..(ch + 16)]);
-            let r_im_chunk = f32x16::from_slice_unaligned(&r_im[(ch)..(ch + 16)]);
-
-            let h_re_chunk = f32x16::splat(h[m].re);
-            let h_im_chunk = f32x16::splat(h[m].im);
-
-            // chunk for writing to the result vectors.
-            let w_re_chunk = r_re_chunk + x_re_chunk * h_re_chunk - x_im_chunk * h_im_chunk;
-            let w_im_chunk = r_im_chunk + x_re_chunk * h_im_chunk + x_im_chunk * h_re_chunk;
-
-            w_re_chunk.write_to_slice_unaligned(&mut r_re[(ch)..(ch + 16)]);
-            w_im_chunk.write_to_slice_unaligned(&mut r_im[(ch)..(ch + 16)]);
+    pub fn xcorr(x: &[f32], h: &[f32]) -> Vec<f32> {
+        let mut r = vec![0.0; x.len()];
+        for i in 0..x.len() {
+            for j in 0..h.len() {
+                let k = i + j;
+                r[i] += x.get(k).unwrap_or(&0.0) * h[j];
+            }
         }
+        r
     }
 
-    // Combine the two vectors into one
-    r_re[..x.len()]
-        .iter()
-        .zip(r_im.iter())
-        .map(|(re, im)| Complex::new(*re, *im))
-        .collect()
-}
+    /// A cross correlation implementation using SIMD instructions.
+    /// TODO: read out of range error.
+    pub fn xcorr_simd(x: &[f32], h: &[f32]) -> Vec<f32> {
+        // Lengths
+        let lx = x.len();
+        let lh = h.len();
+        let lxch = lx - (lx % 16) + 16; // Chunked length of x, (rounded up to nearest 16).
 
-/// A cross correlation implementation using fast fourier transforms.
-pub fn xcorr_fft(
-    mut sig: &mut Vec<Complex<f32>>,
-    mut fir: &mut Vec<Complex<f32>>,
-) -> Vec<Complex<f32>> {
-    let n = sig.len() + fir.len() - 1;
-    let range = (fir.len() - 1)..;
+        // Pad right w/ zeros to chunk size.
+        x.to_vec().resize(lxch + lh, 0.);
 
-    // Time reverse and resize the fir filter.
-    fir.reverse();
-    fir.resize(n, Complex::zero());
+        // Result vector.
+        let mut r = vec![0.0; lxch + lh];
 
-    // Resize the signal.
-    sig.resize(n, Complex::zero());
-    // Frequency domain
-    let mut fsig: Vec<Complex<f32>> = vec![Complex::zero(); n];
-    let mut ffir: Vec<Complex<f32>> = vec![Complex::zero(); n];
+        for m in 0..lh {
+            for ch in (0..lxch).step_by(16) {
+                let x_chunk = f32x16::from_slice_unaligned(&x[(ch + m)..(ch + m + 16)]);
+                let r_chunk = f32x16::from_slice_unaligned(&r[(ch)..(ch + 16)]);
+                let h_chunk = f32x16::splat(h[m]);
 
-    // Do FFT
-    let fft = FFTplanner::new(false).plan_fft(n);
-    fft.process(&mut sig, &mut fsig);
-    fft.process(&mut fir, &mut ffir);
+                // chunk for writing to the result vectors.
+                let w_chunk = r_chunk + x_chunk * h_chunk;
 
-    // Elementwise multiplication
-    // Dividing each individually by sqrt(n) is the same as dividing both by n.
-    let mut fres: Vec<Complex<f32>> = vec![Complex::zero(); n];
-    let n_inv = 1. / (n as f32);
-    for i in 0..n {
-        fres[i] = fsig[i] * ffir[i] * n_inv;
+                w_chunk.write_to_slice_unaligned(&mut r[(ch)..(ch + 16)]);
+            }
+        }
+
+        // Combine the two vectors into one
+        r[..x.len()].to_vec()
     }
-
-    // Do IFFT
-    let mut result: Vec<Complex<f32>> = vec![Complex::zero(); n];
-    let ifft = FFTplanner::new(true).plan_fft(n);
-    ifft.process(&mut fres, &mut result);
-
-    result[range].to_vec()
 }
 
 // Unit tests

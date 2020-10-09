@@ -1,7 +1,7 @@
 use super::Cwt;
 use crate::cwt::wavelets::WaveletFn;
 use crate::iter::rangef;
-use crate::xcorr;
+use crate::xcorr::cplx;
 use rayon::prelude::*;
 use rustfft::num_complex::Complex;
 
@@ -33,7 +33,16 @@ impl Fft {
 }
 
 impl<I: Iterator<Item = f32>> Cwt<I> for Fft {
-    fn process(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+    fn process_real(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+        panic!("--cwt Fft does not support real wavelets. There is no performance 
+                improvement with this combination, and therefore no reason to use it.");
+    }
+    fn process_real_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+        panic!("--cwt Fft does not support real wavelets. There is no performance 
+                improvement with this combination, and therefore no reason to use it.");
+    }
+
+    fn process_cplx(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         let sig_cpx: Vec<Complex<f32>> = sig.map(Complex::from).collect();
 
         self.frequencies
@@ -50,7 +59,7 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Fft {
                 let mut sig_cpx_mut: Vec<Complex<f32>> = sig_cpx.to_vec();
                 let mut wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.cplx(t / scale)).collect();
 
-                xcorr::xcorr_fft(&mut sig_cpx_mut, &mut wvt)
+                cplx::xcorr_fft(&mut sig_cpx_mut, &mut wvt)
                     .iter()
                     .take(self.take)
                     .map(|i| i.norm())
@@ -58,7 +67,7 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Fft {
             })
             .collect()
     }
-    fn process_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
+    fn process_cplx_par(&mut self, sig: &mut I) -> Vec<Vec<f32>> {
         let sig_cpx: Vec<Complex<f32>> = sig.map(Complex::from).collect();
 
         self.frequencies
@@ -75,7 +84,7 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Fft {
                 let mut sig_cpx_mut: Vec<Complex<f32>> = sig_cpx.to_vec();
                 let mut wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.cplx(t / scale)).collect();
 
-                xcorr::xcorr_fft(&mut sig_cpx_mut, &mut wvt)
+                cplx::xcorr_fft(&mut sig_cpx_mut, &mut wvt)
                     .iter()
                     .take(self.take)
                     .map(|i| i.norm())

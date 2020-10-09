@@ -1,18 +1,20 @@
-use crate::*;
 use crate::mean_shift_clustering::MeanShiftClustering;
 use crate::mean_shift_clustering::Point;
+use crate::*;
 use std::f32::consts::TAU;
 
+use crate::config;
+use crate::config::WaveletType;
 use crate::cwt::alg;
 use crate::cwt::alg::Cwt;
 use crate::cwt::wavelets;
 use crate::cwt::wavelets::WaveletFn;
 use crate::iter;
-use crate::config;
 
 pub struct BubbleIdentifier {
     cwt: Box<dyn Cwt<std::vec::IntoIter<f32>>>,
     parallel: bool,
+    use_cplx_wavelet: bool,
     cluster_alg: Option<MeanShiftClustering>,
     threshold: f32,
     frequencies: Vec<f32>,
@@ -52,15 +54,18 @@ impl BubbleIdentifier {
             config::CwtAlg::Standard => {
                 box alg::Standard::new(len, peek, wvt, [0., 50.], &frequencies, fs)
             }
-            config::CwtAlg::Simd => {
-                box alg::Simd::new(len, peek, wvt, [0., 50.], &frequencies, fs)
-            }
+            config::CwtAlg::Simd => box alg::Simd::new(len, peek, wvt, [0., 50.], &frequencies, fs),
         };
 
         BubbleIdentifier {
             cwt,
             parallel: opt.parallel,
-            cluster_alg: if opt.clustering {Some(MeanShiftClustering::new(&opt))} else {None},
+            use_cplx_wavelet: opt.wavelet_type == WaveletType::CplxWavelet,
+            cluster_alg: if opt.clustering {
+                Some(MeanShiftClustering::new(&opt))
+            } else {
+                None
+            },
             threshold: opt.threshold,
             frequencies,
             fs,
@@ -68,10 +73,14 @@ impl BubbleIdentifier {
     }
 
     pub fn cwt(&mut self, chunk: Vec<f32>) -> Vec<Vec<f32>> {
-        if self.parallel {
-            self.cwt.process_par(&mut chunk.into_iter())
+        if self.parallel && self.use_cplx_wavelet {
+            self.cwt.process_cplx_par(&mut chunk.into_iter())
+        } else if self.parallel && !self.use_cplx_wavelet {
+            self.cwt.process_real_par(&mut chunk.into_iter())
+        } else if !self.parallel && self.use_cplx_wavelet {
+            self.cwt.process_cplx(&mut chunk.into_iter())
         } else {
-            self.cwt.process(&mut chunk.into_iter())
+            self.cwt.process_real(&mut chunk.into_iter())
         }
     }
 
@@ -121,8 +130,6 @@ impl BubbleIdentifier {
             .collect()
     }
 }
-
-
 
 pub fn to_radius(freq: f32) -> f32 {
     (3f32 * 1.4f32 * 101.325f32).sqrt() / (freq * TAU)
