@@ -123,8 +123,6 @@ pub fn run(cmd: &CmdOpts) {
             }
             let b = identifier.find_bubbles(&s);
             joiner.append(idx as isize, &b);
-        } else {
-            println!("No data");
         }
     }
 

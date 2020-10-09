@@ -1,64 +1,53 @@
-// mod common;
-// mod data;
+mod test_utils;
 
-// use bubble_lib::*;
-// use std::path::Path;
+use bencher::Bencher;
+use bubble_lib::*;
+use std::path::Path;
+use std::thread;
 
-// #[test]
-// fn integration_test() {
-//     let opts = config::Opts {
-//         cwt: config::CwtAlg::FftFilterBank,
-//         debug: false,
-//         segment_size: 200., // ms
-//         threshold: 100.,
-//         radius_resolution: 0.02, // mm
-//         min_radius: 0.30,        // mm
-//         max_radius: 3.00,        // mm
-//         parallel: true,
-//         clustering: true,
-//         clustering_window: config::ClusteringWindow::Circular,
-//         clustering_window_bandwidths: vec![15.],
-//         max_iterations: 20,
-//         wavelet: config::Wavelet::Laplace,
-//         zeta: 0.02,
-//     };
+#[test]
+fn integration() {
+    let opts = config::Opts {
+        // Params which I am benchmarking performance with.
+        cwt: config::CwtAlg::FftFilterBank,
+        wavelet_type: config::WaveletType::CplxWavelet,
+        parallel: true,
+        radius_resolution: 0.02, // mm
+        segment_size: 200.,      // ms
 
-//     let (d, fs) = common::get_data(Path::new("tests/data/data.wav")).unwrap();
+        // Params which remain the same.
+        debug: false,
+        threshold: 100.,
+        min_radius: 0.30, // mm
+        max_radius: 3.00, // mm
+        clustering: true,
+        clustering_window: config::ClusteringWindow::Circular,
+        clustering_window_bandwidths: vec![15.],
+        max_iterations: 20,
+        wavelet: config::Wavelet::Laplace,
+        zeta: 0.02,
+    };
 
-//     // Chunk length requirements.
-//     const PEAK_FINDING_OVERLAP: usize = 2;
-//     let take = (opts.segment_size * 1e-3 * fs as f32) as usize;
-//     let peek = (50e-3 * fs as f32) as usize + PEAK_FINDING_OVERLAP;
+    #[rustfmt::skip]
+    let (d, fs) = test_utils::get_data(Path::new("test_data/data.wav"))
+                                    .expect("Could not find test data");
 
-//     let mut iter = d.into_iter().peekable();
-//     let mut identifier = analysis::BubbleIdentifier::new(&opts, fs);
-//     let mut joiner = summary::Joiner::new(&opts);
+    const PEAK_FINDING_OVERLAP: usize = 2;
+    let take = (opts.segment_size * 1e-3 * fs as f32) as usize;
+    let peek = (50e-3 * fs as f32) as usize + PEAK_FINDING_OVERLAP;
 
-//     // Read in data chunk by chunk (with overlap).
-//     'outer: for i in 1.. {
-//         let mut chunk = Vec::with_capacity(take + peek);
-//         for _j in 0..take {
-//             match iter.next() {
-//                 Some(x) => chunk.push(x),
-//                 None => break 'outer,
-//             }
-//         }
-//         for _j in 0..peek {
-//             match iter.peek() {
-//                 Some(x) => chunk.push(*x),
-//                 None => break 'outer,
-//             }
-//         }
+    let (mut send, mut recv) = segmenter::Segmenter::split(take, peek);
 
-//         // Process chunk
-//         let mut s = identifier.cwt(chunk);
-//         identifier.threshold(&mut s);
-//         let b = identifier.find_bubbles(&s);
-//         joiner.append(i, &b);
-//     }
+    let t = thread::spawn(move || {
+        for val in d.into_iter() {
+            send.push(val);
+        }
+    });
+    t.join().unwrap();
 
-//     let expected = data::get();
-//     let actual = joiner.get_joined();
+    let mut identifier = analysis::BubbleIdentifier::new(&opts, fs);
 
-//     assert_eq!(expected, actual);
-// }
+    while let Ok(chunk) = recv.pop_segment() {
+        identifier.cwt(chunk);
+    }
+}
