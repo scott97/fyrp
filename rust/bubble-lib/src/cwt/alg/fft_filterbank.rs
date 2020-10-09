@@ -5,7 +5,6 @@ use rayon::prelude::*;
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 use rustfft::FFTplanner;
-use rustfft::FFT;
 
 pub struct FftFilterBank {
     filter_bank: Vec<Vec<Complex<f32>>>, // Calculated ahead of time and reused.

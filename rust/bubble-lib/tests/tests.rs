@@ -1,6 +1,5 @@
 mod test_utils;
 
-use bencher::Bencher;
 use bubble_lib::*;
 use std::path::Path;
 use std::thread;

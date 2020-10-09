@@ -1,6 +1,5 @@
 use crate::mean_shift_clustering::MeanShiftClustering;
 use crate::mean_shift_clustering::Point;
-use crate::*;
 use std::f32::consts::TAU;
 
 use crate::config;

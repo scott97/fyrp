@@ -95,11 +95,9 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Standard {
                     self.step,
                 );
                 let k = 1.0 / scale.sqrt();
+                let wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.cplx(t / scale)).collect();
 
-                let mut sig_cpx_mut: Vec<Complex<f32>> = sig_cpx.to_vec();
-                let mut wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.cplx(t / scale)).collect();
-
-                cplx::xcorr(&mut sig_cpx_mut, &mut wvt)
+                cplx::xcorr(&sig_cpx, &wvt)
                     .iter()
                     .take(self.take)
                     .map(|i| i.norm())
@@ -121,11 +119,9 @@ impl<I: Iterator<Item = f32>> Cwt<I> for Standard {
                     self.step,
                 );
                 let k = 1.0 / scale.sqrt();
+                let wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.cplx(t / scale)).collect();
 
-                let mut sig_cpx_mut: Vec<Complex<f32>> = sig_cpx.to_vec();
-                let mut wvt: Vec<Complex<f32>> = t.map(|t| k * self.wvt.cplx(t / scale)).collect();
-
-                cplx::xcorr(&mut sig_cpx_mut, &mut wvt)
+                cplx::xcorr(&sig_cpx, &wvt)
                     .iter()
                     .take(self.take)
                     .map(|i| i.norm())

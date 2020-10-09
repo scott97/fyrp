@@ -1,16 +1,9 @@
 //! Cross correlation, discarding values so that the returned vector
 //! is of equal length to the provided signal.
 
-use packed_simd::*;
-use rustfft::num_complex::Complex;
-use rustfft::num_traits::One;
-use rustfft::num_traits::Zero;
-use rustfft::FFTplanner;
-
 pub mod cplx {
     use packed_simd::*;
     use rustfft::num_complex::Complex;
-    use rustfft::num_traits::One;
     use rustfft::num_traits::Zero;
     use rustfft::FFTplanner;
 
@@ -36,8 +29,8 @@ pub mod cplx {
         let lxch = lx - (lx % 16) + 16; // Chunked length of x, (rounded up to nearest 16).
 
         // Flatten the complex vector into two vectors of f32s.
-        let mut x_re: Vec<_> = x.into_iter().map(|v| v.re).collect();
-        let mut x_im: Vec<_> = x.into_iter().map(|v| v.im).collect();
+        let mut x_re: Vec<_> = x.iter().map(|v| v.re).collect();
+        let mut x_im: Vec<_> = x.iter().map(|v| v.im).collect();
 
         x_re.resize(lxch + lh, 0.); // pad right w/ zeros to chunk size.
         x_im.resize(lxch + lh, 0.); // pad right w/ zeros to chunk size.
@@ -116,10 +109,6 @@ pub mod cplx {
 /// Cross correlation optimised for real numbers only
 pub mod real {
     use packed_simd::*;
-    use rustfft::num_complex::Complex;
-    use rustfft::num_traits::One;
-    use rustfft::num_traits::Zero;
-    use rustfft::FFTplanner;
 
     pub fn xcorr(x: &[f32], h: &[f32]) -> Vec<f32> {
         let mut r = vec![0.0; x.len()];
@@ -167,6 +156,9 @@ pub mod real {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustfft::num_complex::Complex;
+    use rustfft::num_traits::One;
+    use rustfft::num_traits::Zero;
 
     fn assert_cplx_f32s_approx_eq(a: &[Complex<f32>], b: &[Complex<f32>]) {
         println!("a: {:?}", &a);

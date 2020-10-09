@@ -41,7 +41,7 @@ impl Segmenter {
             overlap,
         }));
 
-        (Sender { seg: seg.clone() }, Receiver { seg: seg })
+        (Sender { seg: seg.clone() }, Receiver { seg })
     }
 
     fn push(&mut self, val: f32) {
