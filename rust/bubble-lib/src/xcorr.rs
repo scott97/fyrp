@@ -193,146 +193,74 @@ mod tests {
 
     fn get_test_real(i: isize) -> (Vec<f32>, Vec<f32>, Vec<f32>) {
         match i {
-            0 => (
-                // TODO: this test case is unverified.
+            #[rustfmt::skip]
+            0 => ( // Verified by hand.
                 vec![1.0, 2.0, 3.0],
                 vec![4.0, 5.0],
                 vec![14.0, 23.0, 12.0],
             ),
-            1 => (
-                // Verified by hand.
+
+            #[rustfmt::skip]
+            1 => ( // Verified by hand.
                 vec![1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0],
                 vec![1.0, 0.0],
                 vec![1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0],
             ),
-            2 => (
-                // Verified by hand.
+
+            #[rustfmt::skip]
+            2 => ( // Verified by hand.
                 vec![1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0],
                 vec![1.0, 1.0, 0.0, 0.0],
                 vec![2.0, 1.0, 0.0, 1.0, 2.0, 1.0, 0.0, 0.0],
             ),
+
             _ => panic!("test doesn't exist"),
         }
     }
 
-    fn get_test_cplx(i: isize) -> (Vec<Complex<f32>>, Vec<Complex<f32>>, Vec<Complex<f32>>) {
+    type CplxVec = Vec<Complex<f32>>;
+    fn get_test_cplx(i: isize) -> (CplxVec, CplxVec, CplxVec) {
         match i {
-            0 => (
-                // TODO: this test case is unverified.
-                vec![Complex::from(1.0), Complex::from(2.0), Complex::from(3.0)],
-                vec![Complex::from(4.0), Complex::from(5.0)],
-                vec![
-                    Complex::from(14.0),
-                    Complex::from(23.0),
-                    Complex::from(12.0),
-                ],
+            #[rustfmt::skip]
+            0 => ( // Verified by hand.
+                vec![ Complex::from(1.0),  Complex::from(2.0),  Complex::from(3.0)],
+                vec![ Complex::from(4.0),  Complex::from(5.0) ],
+                vec![ Complex::from(14.0), Complex::from(23.0), Complex::from(12.0)],
             ),
-            1 => (
-                // Verified by hand.
-                vec![
-                    Complex::from(1.0),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::from(-1.0),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::zero(),
-                ],
-                vec![Complex::from(1.0), Complex::zero()],
-                vec![
-                    Complex::from(1.0),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::from(-1.0),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::zero(),
-                ],
+
+            #[rustfmt::skip]
+            1 => ( // Verified by hand.
+                vec![ Complex::one(),  Complex::zero(), Complex::zero(), Complex::from(-1.0),
+                      Complex::zero(), Complex::zero(), Complex::zero(), Complex::zero() ],
+                vec![ Complex::one(), Complex::zero() ],
+                vec![ Complex::one(),  Complex::zero(), Complex::zero(), Complex::from(-1.0),
+                      Complex::zero(), Complex::zero(), Complex::zero(), Complex::zero() ],
             ),
-            2 => (
-                // Verified by hand.
-                vec![
-                    Complex::from(1.0),
-                    Complex::from(1.0),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::from(1.0),
-                    Complex::from(1.0),
-                    Complex::zero(),
-                    Complex::zero(),
-                ],
-                vec![
-                    Complex::from(1.0),
-                    Complex::from(1.0),
-                    Complex::zero(),
-                    Complex::zero(),
-                ],
-                vec![
-                    Complex::from(2.0),
-                    Complex::from(1.0),
-                    Complex::zero(),
-                    Complex::from(1.0),
-                    Complex::from(2.0),
-                    Complex::from(1.0),
-                    Complex::zero(),
-                    Complex::zero(),
-                ],
+
+            #[rustfmt::skip]
+            2 => ( // Verified by hand.
+                vec![ Complex::one(),     Complex::one(),     Complex::zero(), Complex::zero(),
+                      Complex::one(),     Complex::one(),     Complex::zero(), Complex::zero() ],
+                vec![ Complex::one(),     Complex::one(),     Complex::zero(), Complex::zero() ],
+                vec![ Complex::from(2.0), Complex::from(1.0), Complex::zero(), Complex::from(1.0),
+                      Complex::from(2.0), Complex::from(1.0), Complex::zero(), Complex::zero() ],
             ),
-            3 => (
-                // Verified by hand.
-                vec![
-                    Complex::from(1.0),
-                    Complex::from(1.0),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::from(-1.0),
-                    Complex::from(1.0),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::i(),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::from(4.0),
-                    Complex::zero(),
-                    Complex::new(6.0, 6.0),
-                    Complex::from(3.0),
-                    Complex::zero(),
-                ],
-                vec![
-                    Complex::i(),
-                    Complex::zero(),
-                    Complex::one(),
-                    Complex::zero(),
-                ],
-                vec![
-                    Complex::i(),
-                    Complex::i(),
-                    -Complex::one(),
-                    Complex::one(),
-                    -Complex::i(),
-                    Complex::i(),
-                    Complex::i(),
-                    Complex::zero(),
-                    -Complex::one(),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::zero(),
-                    Complex::from(4.0),
-                    Complex::zero(),
-                    Complex::new(6.0, 10.0),
-                    Complex::from(3.0),
-                    Complex::new(-6.0, 6.0),
-                    Complex::new(0.0, 3.0),
-                    Complex::zero(),
-                ],
+
+            #[rustfmt::skip]
+            3 => ( // Verified by hand.
+                vec![ Complex::one(),      Complex::one(),         Complex::zero(),         Complex::zero(),
+                      Complex::from(-1.0), Complex::one(),         Complex::zero(),         Complex::zero(),
+                      Complex::i(),        Complex::zero(),        Complex::zero(),         Complex::zero(),
+                      Complex::zero(),     Complex::zero(),        Complex::zero(),         Complex::from(4.0),
+                      Complex::zero(),     Complex::new(6.0, 6.0), Complex::from(3.0),      Complex::zero() ],
+                vec![ Complex::i(),        Complex::zero(),        Complex::one(),          Complex::zero() ],
+                vec![ Complex::i(),        Complex::i(),            Complex::from(-1.0),    Complex::one(),
+                      -Complex::i(),       Complex::i(),            Complex::i(),           Complex::zero(),
+                      Complex::from(-1.0), Complex::zero(),         Complex::zero(),        Complex::zero(),
+                      Complex::zero(),     Complex::from(4.0),      Complex::zero(),        Complex::new(6.0, 10.0),
+                      Complex::from(3.0),  Complex::new(-6.0, 6.0), Complex::new(0.0, 3.0), Complex::zero() ],
             ),
+
             _ => panic!("test doesn't exist"),
         }
     }
@@ -341,9 +269,7 @@ mod tests {
     fn test_cplx_xcorr() {
         for i in 0..4 {
             let (x, h, expected) = get_test_cplx(i);
-
             let actual = cplx::xcorr(&x, &h);
-
             assert_cplx_f32s_approx_eq(&expected, &actual);
         }
     }
@@ -352,9 +278,7 @@ mod tests {
     fn test_cplx_xcorr_fft() {
         for i in 0..4 {
             let (mut x, mut h, expected) = get_test_cplx(i);
-
             let actual = cplx::xcorr_fft(&mut x, &mut h);
-
             assert_cplx_f32s_approx_eq(&expected, &actual);
         }
     }
@@ -363,9 +287,7 @@ mod tests {
     fn test_cplx_xcorr_simd() {
         for i in 0..4 {
             let (x, h, expected) = get_test_cplx(i);
-
             let actual = cplx::xcorr_simd(&x, &h);
-
             assert_cplx_f32s_approx_eq(&expected, &actual);
         }
     }
@@ -374,9 +296,7 @@ mod tests {
     fn test_real_xcorr() {
         for i in 0..3 {
             let (x, h, expected) = get_test_real(i);
-
             let actual = real::xcorr(&x, &h);
-
             assert_f32s_approx_eq(&expected, &actual);
         }
     }
@@ -385,9 +305,7 @@ mod tests {
     fn test_real_xcorr_simd() {
         for i in 0..3 {
             let (x, h, expected) = get_test_real(i);
-
             let actual = real::xcorr_simd(&x, &h);
-
             assert_f32s_approx_eq(&expected, &actual);
         }
     }
