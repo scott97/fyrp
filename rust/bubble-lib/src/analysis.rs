@@ -3,6 +3,7 @@ use crate::mean_shift_clustering::Point;
 use std::f32::consts::TAU;
 
 use crate::config;
+use crate::config::ThresholdType;
 use crate::config::WaveletType;
 use crate::cwt::alg;
 use crate::cwt::alg::Cwt;
@@ -12,12 +13,15 @@ use crate::iter;
 
 pub struct BubbleIdentifier {
     cwt: Box<dyn Cwt<std::vec::IntoIter<f32>>>,
-    parallel: bool,
-    use_cplx_wavelet: bool,
     cluster_alg: Option<MeanShiftClustering>,
-    threshold: f32,
     frequencies: Vec<f32>,
     fs: u32,
+    threshold: f32,
+    thresholds: Vec<f32>,
+
+    use_parallel: bool,
+    use_proportional_to_radius: bool,
+    use_cplx_wavelet: bool,
 }
 
 impl BubbleIdentifier {
@@ -33,6 +37,14 @@ impl BubbleIdentifier {
             opt.radius_resolution * 1e-3,
         )
         .map(to_freq)
+        .collect();
+
+        let thresholds: Vec<_> = iter::rangef(
+            opt.min_radius * 1e-3,
+            opt.max_radius * 1e-3,
+            opt.radius_resolution * 1e-3,
+        )
+        .map(|r| r * &opt.threshold)
         .collect();
 
         if opt.debug {
@@ -56,27 +68,32 @@ impl BubbleIdentifier {
             config::CwtAlg::Simd => box alg::Simd::new(len, peek, wvt, [0., 50.], &frequencies, fs),
         };
 
+        let cluster_alg = if opt.clustering {
+            Some(MeanShiftClustering::new(&opt))
+        } else {
+            None
+        };
+
         BubbleIdentifier {
             cwt,
-            parallel: opt.parallel,
-            use_cplx_wavelet: opt.wavelet_type == WaveletType::CplxWavelet,
-            cluster_alg: if opt.clustering {
-                Some(MeanShiftClustering::new(&opt))
-            } else {
-                None
-            },
-            threshold: opt.threshold,
+            cluster_alg,
             frequencies,
             fs,
+            threshold: opt.threshold,
+            thresholds,
+
+            use_parallel: opt.parallel,
+            use_proportional_to_radius: opt.threshold_type == ThresholdType::ProportionalToRadius,
+            use_cplx_wavelet: opt.wavelet_type == WaveletType::CplxWavelet,
         }
     }
 
     pub fn cwt(&mut self, chunk: Vec<f32>) -> Vec<Vec<f32>> {
-        if self.parallel && self.use_cplx_wavelet {
+        if self.use_parallel && self.use_cplx_wavelet {
             self.cwt.process_cplx_par(&mut chunk.into_iter())
-        } else if self.parallel && !self.use_cplx_wavelet {
+        } else if self.use_parallel && !self.use_cplx_wavelet {
             self.cwt.process_real_par(&mut chunk.into_iter())
-        } else if !self.parallel && self.use_cplx_wavelet {
+        } else if !self.use_parallel && self.use_cplx_wavelet {
             self.cwt.process_cplx(&mut chunk.into_iter())
         } else {
             self.cwt.process_real(&mut chunk.into_iter())
@@ -84,10 +101,20 @@ impl BubbleIdentifier {
     }
 
     pub fn threshold(&self, s: &mut Vec<Vec<f32>>) {
-        for row in s.iter_mut() {
-            for val in row {
-                if *val < self.threshold {
-                    *val = 0.;
+        if self.use_proportional_to_radius {
+            for i in 0..s.len(){
+                for j in 0..s[i].len() {
+                    if s[i][j] < self.thresholds[i] {
+                        s[i][j] = 0.;
+                    }
+                }
+            }
+        } else {
+            for row in s.iter_mut() {
+                for val in row {
+                    if *val < self.threshold {
+                        *val = 0.;
+                    }
                 }
             }
         }

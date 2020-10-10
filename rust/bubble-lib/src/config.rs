@@ -29,6 +29,14 @@ arg_enum! {
 }
 
 arg_enum! {
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum ThresholdType {
+        Constant,
+        ProportionalToRadius,
+    }
+}
+
+arg_enum! {
     #[derive(Debug, Clone)]
     pub enum ClusteringWindow {
         Circular,
@@ -41,31 +49,35 @@ arg_enum! {
 #[derive(StructOpt, Debug, Clone)]
 pub struct Opts {
     /// Continuous wavelet transform algorithm
-    #[structopt(short,long,possible_values = &CwtAlg::variants(), case_insensitive = true, default_value = "FftFilterBank")]
+    #[structopt(long,possible_values = &CwtAlg::variants(), case_insensitive = true, default_value = "FftFilterBank")]
     pub cwt: CwtAlg,
 
     /// Activate debug mode.
-    #[structopt(short, long)]
+    #[structopt( long)]
     pub debug: bool,
 
     /// Segment size (ms)
-    #[structopt(short, long, default_value = "200")]
+    #[structopt( long, default_value = "200")]
     pub segment_size: f32,
 
     /// Threshold value (unitless)
-    #[structopt(short, long, default_value = "100")]
+    #[structopt( long, default_value = "250000")]
     pub threshold: f32,
 
+    /// Threshold type
+    #[structopt(long,possible_values = &ThresholdType::variants(), case_insensitive = true, default_value = "ProportionalToRadius")]
+    pub threshold_type: ThresholdType,
+
     /// Radius resolution (mm)
-    #[structopt(short, long, default_value = "0.02")]
+    #[structopt( long, default_value = "0.02")]
     pub radius_resolution: f32,
 
     /// Minimum radius (mm)
-    #[structopt(short = "m", long, default_value = "0.30")]
+    #[structopt(long, default_value = "0.30")]
     pub min_radius: f32,
 
     /// Maximum radius (mm)
-    #[structopt(short = "M", long, default_value = "3.00")]
+    #[structopt(long, default_value = "3.00")]
     pub max_radius: f32,
 
     /// Disable parallel processing of data
@@ -87,19 +99,19 @@ pub struct Opts {
     /// Clustering Window Maximum Iterations
     /// Choose a value which is sufficient for clustering to work.
     /// Higher values give slower performance.
-    #[structopt(short = "i", long, default_value = "20")]
+    #[structopt(long, default_value = "20")]
     pub max_iterations: u32,
 
     /// Wavelet function
-    #[structopt(short,long,possible_values = &Wavelet::variants(), case_insensitive = true, default_value = "Laplace")]
+    #[structopt(long,possible_values = &Wavelet::variants(), case_insensitive = true, default_value = "Laplace")]
     pub wavelet: Wavelet,
 
     /// Wavelet type
     /// Real wavelets are faster to process when using the SIMD or standard methods of performing the CWT.
-    #[structopt(short,long,possible_values = &WaveletType::variants(), case_insensitive = true, default_value = "CplxWavelet")]
+    #[structopt(long,possible_values = &WaveletType::variants(), case_insensitive = true, default_value = "CplxWavelet")]
     pub wavelet_type: WaveletType,
 
     /// Zeta is used by the soulti wavelet function
-    #[structopt(short, long, default_value = "0.02", required_if("wavelet", "Laplace"))]
+    #[structopt(long, default_value = "0.02", required_if("wavelet", "Laplace"))]
     pub zeta: f32,
 }

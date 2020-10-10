@@ -36,7 +36,7 @@ pub struct CmdOpts {
     pub out_type: OutputType,
 
     /// Export Scaleograms
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub scaleograms: bool,
 
     #[structopt(flatten)]
