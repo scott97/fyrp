@@ -42,8 +42,8 @@ morlet_cpx = @(t) exp(-(tau/5 .* t) .^ 2 ./2) .* exp(j*tau .* t);
 
 zeta = 0.02;
 k = 1-zeta^2;
-soulti_real = @(t) 1/k .* exp(-zeta/k * tau .* t) .* sin(tau .* t) .* (t>0);
-soulti_cpx = @(t) 1/k .* exp(-zeta/k * tau .* t) .* exp(j*tau .* t) .* (t>0);
+soulti_real = @(t) 1/k .* exp(-zeta/sqrt(k) * tau .* t) .* sin(tau .* t) .* (t>0);
+soulti_cpx = @(t) 1/k .* exp(-zeta/sqrt(k) * tau .* t) .* exp(j*tau .* t) .* (t>0);
 
 % Plot wavelets
 % figure
