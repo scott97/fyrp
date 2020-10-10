@@ -32,7 +32,7 @@ pub struct CmdOpts {
     pub out_dir: PathBuf,
 
     /// Output file type
-    #[structopt(long,possible_values = &OutputType::variants(), case_insensitive = true, default_value = "Both")]
+    #[structopt(long,possible_values = &OutputType::variants(), case_insensitive = true, default_value = "Csv")]
     pub out_type: OutputType,
 
     /// Export Scaleograms
