@@ -12,7 +12,7 @@ function [y,t] = basic(data,fs)
 
 
     for i = 1:length(t_val)
-        d = generate_audio.make_sound(R_0(i), dd_ic(i), t_val(i), t);
+        d = generate_audio.make_sound(R_0(i), t_val(i), t);
         y = y + d;
     end
 

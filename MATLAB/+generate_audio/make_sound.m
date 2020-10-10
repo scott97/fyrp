@@ -1,5 +1,5 @@
 % Solving 2ODE's is slow so this just uses an algebraic expression.
-function d = make_sound(R_0, ddot_0, T, t)
+function d = make_sound(R_0, T, t)
 
     % Bubbles oscillate according to this differential equation:
     % eq1: R_0 * δdotdot + b * δdot + (3 * K_p * P_0) / (ρ_0 * R_0) * δ = 0
@@ -37,7 +37,8 @@ function d = make_sound(R_0, ddot_0, T, t)
     wd = wn * sqrt(1-z^2);
 
     % Evaluate
-    d = wn / sqrt(1 - z^2) .* exp(-z .* wn .* (t-T)) .* sin(wd .* (t-T)) .* ((t-T) > 0);
+    % Signal amplitude is proportional to radius, so the first term is R_0
+    d = R_0 .* exp(-z .* wn .* (t-T)) .* sin(wd .* (t-T)) .* ((t-T) > 0);
 
     % The exp function is causing infinities or NaNs for large negative numbers of (t-T)
     % These matrix elements should be zero because they occur before T.

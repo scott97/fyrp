@@ -24,7 +24,7 @@ function [y,t] = conical_beam_hydrophone(data, fs, loc)
         theta = acos(dot(-[dx;dy;dz],[0;0;1])/dist);
         att = 1/(dist) * 1/theta;
         delay = dist/c;
-        d = generate_audio.make_sound(R_0(i), dd_ic(i), t_val(i) + delay, t)*att;
+        d = generate_audio.make_sound(R_0(i), t_val(i) + delay, t)*att;
         y = y + d;  
     end
 

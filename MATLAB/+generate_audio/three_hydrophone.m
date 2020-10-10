@@ -27,7 +27,7 @@ function [y1,y2,y3,t] = three_hydrophone(data, fs, loc1, loc2, loc3)
         dist = sqrt(dx^2 + dy^2 + dz^2); 
         att = 1/dist;
         delay = dist/c;
-        d = generate_audio.make_sound(R_0(i), dd_ic(i), t_val(i) + delay, t)*att;
+        d = generate_audio.make_sound(R_0(i), t_val(i) + delay, t)*att;
         y1 = y1 + d;
 
         % Hydrophone 2
@@ -37,7 +37,7 @@ function [y1,y2,y3,t] = three_hydrophone(data, fs, loc1, loc2, loc3)
         dist = sqrt(dx^2 + dy^2 + dz^2); 
         att = 1/dist;
         delay = dist/c;
-        d = generate_audio.make_sound(R_0(i), dd_ic(i), t_val(i) + delay, t)*att;
+        d = generate_audio.make_sound(R_0(i), t_val(i) + delay, t)*att;
         y2 = y2 + d;
 
         % Hydrophone 3
@@ -47,7 +47,7 @@ function [y1,y2,y3,t] = three_hydrophone(data, fs, loc1, loc2, loc3)
         dist = sqrt(dx^2 + dy^2 + dz^2); 
         att = 1/dist;
         delay = dist/c;
-        d = generate_audio.make_sound(R_0(i), dd_ic(i), t_val(i) + delay, t)*att;
+        d = generate_audio.make_sound(R_0(i), t_val(i) + delay, t)*att;
         y3 = y3 + d;
     end
 

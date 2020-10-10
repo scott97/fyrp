@@ -21,7 +21,7 @@ function [y,t] = one_hydrophone(data, fs, loc, duration)
         dist = sqrt(dx^2 + dy^2 + dz^2); 
         att = 1/dist;
         delay = dist/c;
-        d = generate_audio.make_sound(R_0(i), dd_ic(i), t_val(i) + delay, t)*att;
+        d = generate_audio.make_sound(R_0(i), t_val(i) + delay, t)*att;
         y = y + d;
     end
 
