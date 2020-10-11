@@ -17,6 +17,7 @@ fn integration() {
         // Params which remain the same.
         debug: false,
         threshold: 100.,
+        threshold_type: config::ThresholdType::ProportionalToRadius,
         min_radius: 0.30, // mm
         max_radius: 3.00, // mm
         clustering: true,

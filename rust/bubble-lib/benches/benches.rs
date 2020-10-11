@@ -22,6 +22,7 @@ fn bench_cwt_standard_parallel_cplx_wvlt_20um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -49,6 +50,7 @@ fn bench_cwt_simd_parallel_cplx_wvlt_20um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -76,6 +78,7 @@ fn bench_cwt_fft_parallel_cplx_wvlt_20um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -103,6 +106,7 @@ fn bench_cwt_fft_filterbank_parallel_cplx_wvlt_20um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -131,6 +135,7 @@ fn bench_cwt_standard_single_threaded_cplx_wvlt_20um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -158,6 +163,7 @@ fn bench_cwt_simd_single_threaded_cplx_wvlt_20um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -185,6 +191,7 @@ fn bench_cwt_fft_single_threaded_cplx_wvlt_20um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -212,6 +219,7 @@ fn bench_cwt_fft_filterbank_single_threaded_cplx_wvlt_20um(mut b: &mut Bencher) 
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -241,6 +249,7 @@ fn bench_cwt_standard_parallel_real_wvlt_20um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -268,6 +277,7 @@ fn bench_cwt_simd_parallel_real_wvlt_20um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -297,6 +307,7 @@ fn bench_cwt_standard_parallel_cplx_wvlt_40um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -324,6 +335,7 @@ fn bench_cwt_simd_parallel_cplx_wvlt_40um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -351,6 +363,7 @@ fn bench_cwt_fft_parallel_cplx_wvlt_40um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
@@ -378,6 +391,7 @@ fn bench_cwt_fft_filterbank_parallel_cplx_wvlt_40um(mut b: &mut Bencher) {
             segment_size: 200., // ms
             debug: false,
             threshold: 100.,
+            threshold_type: config::ThresholdType::ProportionalToRadius,
             min_radius: 0.30, // mm
             max_radius: 3.00, // mm
             clustering: true,
