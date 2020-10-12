@@ -1,9 +1,9 @@
 function scatter_plot_from_csv(from, to, chunk_duration)
 figure
-title('data scatter plot');
-xlabel('Time (ms)')
+title('Algorithm output (+) vs ideal case (o)');
+xlabel('Time of formation (ms)')
 ylabel('Radius (mm)')
-colorbar
+grid on;
 
 % Import & plot theoretical values
 csv = csvread('../tmp/source_data.csv');

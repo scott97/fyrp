@@ -61,7 +61,7 @@ pub struct Opts {
     pub segment_size: f32,
 
     /// Threshold value (unitless)
-    #[structopt( long, default_value = "250000")]
+    #[structopt( long, default_value = "375000")]
     pub threshold: f32,
 
     /// Threshold type
