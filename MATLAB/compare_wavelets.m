@@ -46,21 +46,48 @@ soulti_real = @(t) 1/k .* exp(-zeta/sqrt(k) * tau .* t) .* sin(tau .* t) .* (t>0
 soulti_cpx = @(t) 1/k .* exp(-zeta/sqrt(k) * tau .* t) .* exp(j*tau .* t) .* (t>0);
 
 % Plot wavelets
-% figure
-% t = -3:.01:3;
-% plot(t,morlet_real(t))
+figure
+t = -3:.01:3;
+plot3(t,real(morlet_cpx(t)),imag(morlet_cpx(t)))
+xlabel('Time');
+ylabel('Real component');
+zlabel('Imaginary component');
+title('Morlet wavelet, with a frequency of 1Hz')
+grid on
 
-% figure
-% t = -9:.01:9;
-% plot(t,winsin_cpx(t))
+figure
+t = -3:.01:3;
+plot(t,real(morlet_cpx(t)))
+hold on
+plot(t,imag(morlet_cpx(t)))
+hold off
+xlabel('Time');
+ylabel('Magnitude');
+title('Morlet wavelet, with a frequency of 1Hz')
+legend('Real component','Imaginary component')
+grid on
 
-% figure
-% t = 0:.01:10;
-% plot(t,soulti_real(t))
+figure
+t = .01:.01:50;
+plot3(t,real(soulti_cpx(t)),imag(soulti_cpx(t)))
+xlabel('Time');
+ylabel('Real component');
+zlabel('Imaginary component');
+title('Laplace wavelet (ζ=0.05), with a frequency of 1Hz')
+grid on
 
-% figure
-% t = 0:.01:50;
-% plot(t,soulti_cpx(t))
+figure
+t = 0:.01:50;
+plot(t,real(soulti_cpx(t)))
+hold on
+plot(t,imag(soulti_cpx(t)))
+hold off
+xlabel('Time');
+ylabel('Magnitude');
+title('Laplace wavelet (ζ=0.05), with a frequency of 1Hz')
+legend('Real component','Imaginary component')
+grid on
+
 
 % Get data
 [y,t] = cached_one_hydrophone(source_data, fs, loc,1.5);
