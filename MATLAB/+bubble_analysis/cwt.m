@@ -11,6 +11,8 @@ function [s,f] = cwt(y,wvlt_fn,wvlt_bounds,f,fs)
         wv = wvlt_fn(t/scale);
         row = conv(y,fliplr(wv)) .* (1/sqrt(scale));
         s(i,:) = row(length(wv):end);
+        % For morlet, replace with
+        % s(i,:) = row(length(wv)-ceil(length(wv)/2):end-ceil(length(wv)/2));
     end
     f = f'; % To match matlab's implementation
 end
