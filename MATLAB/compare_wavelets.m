@@ -114,7 +114,7 @@ plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (Morlet Complex)');
 % Soulti Real
 [s,f] = bubble_analysis.cwt(y, soulti_real, [0 10], 1000:50:9000, fs);
 % peaks = bubble_analysis.find_peaks(s,f,t,0.12);
-plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (SOULTI Real zeta=0.02)');
+plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'SOULTI wavelet (ζ=0.02)');
 % plot_utils.peaks(peaks,'r');
 % plot_utils.peaks(comparison_data,'g');
 
@@ -122,7 +122,7 @@ plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (SOULTI Real zeta=0.02)');
 [s,f] = bubble_analysis.cwt(y, soulti_cpx, [0 50], 1000:50:9000, fs);
 s=abs(s);
 % peaks = bubble_analysis.find_peaks(s,f,t,0.12);
-plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'my cwt (SOULTI Complex zeta=0.02)');
+plot_utils.scaleogram(s,f,t,[0 1500],[1 9],'Laplace wavelet (ζ=0.02)');
 % plot_utils.peaks(peaks,'r');
 % plot_utils.peaks(comparison_data,'g');
 
