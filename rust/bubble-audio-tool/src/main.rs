@@ -28,7 +28,7 @@ pub struct CmdOpts {
     pub input: PathBuf,
 
     /// Output directory
-    #[structopt(parse(from_os_str), default_value = "tmp")]
+    #[structopt(parse(from_os_str), default_value = "./")]
     pub out_dir: PathBuf,
 
     /// Output file type
