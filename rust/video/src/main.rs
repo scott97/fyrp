@@ -9,6 +9,10 @@ use opencv::{
     videoio::{VideoCapture, CAP_ANY},
 };
 
+use std::error::Error;
+use std::fs::File;
+use std::path::Path;
+
 // Parameters to adjust
 const HISTORY: i32 = 200;
 const MOG_THRESHOLD: f64 = 50.0;
@@ -16,11 +20,10 @@ const KERNEL_SIZE: i32 = 4;
 const MORPH_ITERATIONS: i32 = 8;
 const FILE: &str = "1.mp4";
 const MM_PER_PIXEL: f32 = 100.0 / 458.0; // 100 mm = 458 pixels
-const RECT: [(i32, i32); 2] = [(850, 950), (1050, 1025)]; // [ (x1,y1), (x2,y2) ]
+const RECT: [(i32, i32); 2] = [(580, 780), (700, 840)]; // [ (x1,y1), (x2,y2) ]
 const SLOW_MODE: bool = false;
-const FPS: i32 = 30; // 30 FPS. I think when I trimmed it in windows 10 video editor it reduced its framerate.
+const FPS: i32 = 50;
 const DURATION: i32 = 2 * 60;
-
 
 #[derive(Debug)]
 struct Bubble {
@@ -28,47 +31,51 @@ struct Bubble {
     time: f32,
 }
 
-fn run() -> opencv::Result<()> {
+fn run() -> Result<(), Box<dyn Error>> {
     let mut results: Vec<Bubble> = Vec::new();
 
     let video_window = "video capture";
-    highgui::named_window(video_window, highgui::WINDOW_NORMAL)?; // video is 1920x1080
-    highgui::resize_window(video_window, 960, 540)?; // resize x1/2
+    highgui::named_window(video_window, highgui::WINDOW_NORMAL)?; // video is 1280x960
+    highgui::resize_window(video_window, 640, 480)?; // resize x1/2
 
     let cv_window = "mog_result";
-    highgui::named_window(cv_window, highgui::WINDOW_NORMAL)?; // video is 1920x1080
-    highgui::resize_window(cv_window, 960, 540)?; // resize x1/2
+    highgui::named_window(cv_window, highgui::WINDOW_NORMAL)?; // video is 1280x960
+    highgui::resize_window(cv_window, 640, 480)?; // resize x1/2
 
+    
     let mut mog2 = video::create_background_subtractor_mog2(HISTORY, MOG_THRESHOLD, false)?;
 
     let mut cap = VideoCapture::from_file(FILE, CAP_ANY)?;
-
+    
     let kernel = get_structuring_element(
         MorphShapes::MORPH_ELLIPSE as i32,
         core::Size_::new(KERNEL_SIZE, KERNEL_SIZE),
         core::Point_::new(0, 0),
     )?;
-
+    
     let rect = core::Rect_::from_points(
         core::Point_::new(RECT[0].0, RECT[0].1),
         core::Point_::new(RECT[1].0, RECT[1].1),
     );
-
+    
     let rect_f = core::Rect_::from_points(
         core::Point_::new(RECT[0].0 as f32, RECT[0].1 as f32),
         core::Point_::new(RECT[1].0 as f32, RECT[1].1 as f32),
     );
-
+    
     let mut rect_occupied_previous = false;
 
-    for frame_num in 1..(FPS*DURATION) {
+    for frame_num in 1..(FPS * DURATION) {
+        
         let mut frame = core::Mat::default()?;
         let mut frame_mog_result = core::Mat::default()?;
         let mut frame_morph_result = core::Mat::default()?;
         
         cap.read(&mut frame)?;
-    
+        
         mog2.apply(&frame, &mut frame_mog_result, -1.0)?;
+
+        
         morphology_ex(
             &frame_mog_result,
             &mut frame_morph_result,
@@ -80,6 +87,8 @@ fn run() -> opencv::Result<()> {
             morphology_default_border_value()?,
         )?;
 
+        
+
         let mut contours: types::VectorOfVectorOfPoint = core::Vector::new();
         find_contours(
             &frame_morph_result,
@@ -89,25 +98,7 @@ fn run() -> opencv::Result<()> {
             core::Point_::new(0, 0),
         )?;
 
-        let mut rect_occupied = false;
-        for i in 0..contours.len() {
-            let mut centre: core::Point2f = core::Point_::new(0.0, 0.0);
-            let mut radius = 0.0;
-
-            min_enclosing_circle(&contours.get(i)?, &mut centre, &mut radius)?;
-
-            // if centre is within rectange
-            if centre.inside(rect_f) {
-                rect_occupied = true;
-
-                if !rect_occupied_previous {
-                    // bubble has entered the rectangle
-                    results.push(Bubble{radius: radius * MM_PER_PIXEL, time: frame_num as f32 / FPS as f32})
-                }
-            }
-        }
-        rect_occupied_previous = rect_occupied;
-
+        
         rectangle(
             &mut frame,
             rect,
@@ -124,6 +115,28 @@ fn run() -> opencv::Result<()> {
             highgui::imshow(cv_window, &frame_morph_result)?;
         }
 
+        let mut rect_occupied = false;
+        for i in 0..contours.len() {
+            let mut centre: core::Point2f = core::Point_::new(0.0, 0.0);
+            let mut radius = 0.0;
+
+            min_enclosing_circle(&contours.get(i)?, &mut centre, &mut radius)?;
+
+            // if centre is within rectange
+            if centre.inside(rect_f) {
+                rect_occupied = true;
+
+                if !rect_occupied_previous {
+                    // bubble has entered the rectangle
+                    results.push(Bubble {
+                        radius: radius * MM_PER_PIXEL,
+                        time: frame_num as f32 / FPS as f32,
+                    })
+                }
+            }
+        }
+        rect_occupied_previous = rect_occupied;
+
         let wait = if SLOW_MODE { 500 } else { 1 };
         let key = highgui::wait_key(wait)?;
         if key > 0 && key != 255 {
@@ -131,11 +144,27 @@ fn run() -> opencv::Result<()> {
         }
     }
 
-
-    println!("{:?}",results);
+    export_to_csv(&results)?;
     Ok(())
 }
 
 fn main() {
     run().unwrap()
+}
+
+fn export_to_csv(b: &[Bubble]) -> Result<(), Box<dyn Error>> {
+    let path = Path::new("./video.csv");
+
+    if !b.is_empty() {
+        let mut wtr = csv::Writer::from_path(path)?;
+        let text_vec: Vec<String> = b.iter().map(|b| format!("{:e}", b.radius)).collect();
+        wtr.write_record(&text_vec)?;
+        let text_vec: Vec<String> = b.iter().map(|b| format!("{:e}", b.time * 1e3 /*ms*/)).collect();
+        wtr.write_record(&text_vec)?;
+        wtr.flush()?;
+        Ok(())
+    } else {
+        File::create(path)?;
+        Ok(())
+    }
 }

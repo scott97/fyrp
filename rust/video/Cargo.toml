@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 # opencv = "0.46"
 opencv = {version = "0.46", features = ["buildtime-bindgen"]}
+csv = "1" # For exporting data
