@@ -26,3 +26,6 @@ There are some .sh scripts for convenience to automate common tasks.
 
 ## Requirements
 You need MATLAB, Rustlang and Bash installed.
+
+## License
+Send me an email.
